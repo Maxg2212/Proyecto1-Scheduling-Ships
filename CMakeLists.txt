@@ -6,4 +6,9 @@ set(CMAKE_C_STANDARD 23)
 add_executable(Proyecto1_Scheduling_Ships main.c
         main.c
         main.c
-        main.c)
+        main.c
+        scheduling/linked_list.h
+        scheduling/linked_list.c
+        scheduling/fcfs.h
+        scheduling/fcfs.c
+)
