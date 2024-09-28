@@ -1,5 +1,5 @@
 #include "scheduling/linked_list.h"
-#include "scheduling/fcfs.h"
+#include "scheduling/schedulers.h"
 
 struct Node* head = nullptr;
 

@@ -9,6 +9,6 @@ add_executable(Proyecto1_Scheduling_Ships main.c
         main.c
         scheduling/linked_list.h
         scheduling/linked_list.c
-        scheduling/fcfs.h
-        scheduling/fcfs.c
+        scheduling/schedulers.h
+        scheduling/schedulers.c
 )

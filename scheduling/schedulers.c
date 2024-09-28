@@ -2,7 +2,7 @@
 // Created by ejbm0110 on 9/28/24.
 //
 
-#include "fcfs.h"
+#include "schedulers.h"
 #include <pthread.h>
 #include <unistd.h>
 #include <stdio.h>
