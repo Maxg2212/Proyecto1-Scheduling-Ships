@@ -15,5 +15,6 @@ struct Node {
 struct Node* create_node(int id, pthread_t process);
 struct Node* add_to_queue(struct Node* head, int id, pthread_t process);
 struct Node* remove_from_queue(struct Node* head);
+int get_length(struct Node* head);
 
 #endif //LINKED_LIST_H
