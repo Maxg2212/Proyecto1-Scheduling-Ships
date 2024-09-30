@@ -14,10 +14,12 @@
  * @return Nodo
  * @author Eduardo Bolivar Minguet
  */
-struct Node* create_node(int id, pthread_t const process) {
+struct Node* create_node(int id, pthread_t const process, double burst_time, int priority) {
     struct Node* new_node = malloc(sizeof(struct Node));
     new_node->pid = id;
     new_node->process = process;
+    new_node->burst_time = burst_time;
+    new_node->priority = priority;
     new_node->next = nullptr;
     return new_node;
 }
@@ -32,15 +34,15 @@ struct Node* create_node(int id, pthread_t const process) {
  * @return Puntero a la cola ya con el nodo agregado
  * @author Eduardo Bolivar
  */
-struct Node* add_to_queue(struct Node* head, int const id, pthread_t const process) {
+struct Node* add_to_queue(struct Node* head, int const id, pthread_t const process, double burst_time, int priority) {
     if (head == nullptr) {
-        return create_node(id, process);
+        return create_node(id, process, burst_time, priority);
     }
     struct Node* current = head;
     while (current->next != nullptr) {
         current = current->next;
     }
-    current->next = create_node(id, process);
+    current->next = create_node(id, process, burst_time, priority);
     return head;
 }
 

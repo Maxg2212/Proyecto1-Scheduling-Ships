@@ -9,11 +9,13 @@
 struct Node {
     int pid;
     pthread_t process;
+    double burst_time;
+    int priority;
     struct Node* next;
 };
 
-struct Node* create_node(int id, pthread_t process);
-struct Node* add_to_queue(struct Node* head, int id, pthread_t process);
+struct Node* create_node(int id, pthread_t process, double burst_time, int priority);
+struct Node* add_to_queue(struct Node* head, int id, pthread_t process, double burst_time, int priority);
 struct Node* remove_from_queue(struct Node* head);
 int get_length(struct Node* head);
 
