@@ -11,4 +11,6 @@ add_executable(Proyecto1_Scheduling_Ships main.c
         scheduling/linked_list.c
         scheduling/schedulers.h
         scheduling/schedulers.c
+        channel_control/channel_algorithms.h
+        channel_control/channel_algorithms.c
 )

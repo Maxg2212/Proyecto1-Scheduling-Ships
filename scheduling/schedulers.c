@@ -18,7 +18,7 @@
  */
 void* thread_func(void* arg) {
     int count = 0;
-    while (count < 1000) {
+    while (count < 10) {
         printf("Thread %d - Counter: %d\n", *(int*)arg, count++);
     }
     return nullptr;
