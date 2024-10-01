@@ -1,0 +1,11 @@
+{
+  "Scheduler": "FCFS",
+  "FlowAlgorithm": {
+    "Name": "Equity",
+    "Flag": 2
+  },
+  "ChannelLength": 100,
+  "BoatSpeed": 5,
+  "RightBoats": 10,
+  "LeftBoats": 4
+}
