@@ -43,7 +43,7 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER; // Cond pone en espera a hilos y
  */
 void* thread_func_rr(void* arg) {
     int count = 0;
-    while (count < 1000) {
+    while (count < 100) {
         pthread_mutex_lock(&mutex);
         while (turn != *(int*)arg) {
             pthread_cond_wait(&cond, &mutex);   // Si no es su turno, el hilo espera
@@ -52,7 +52,7 @@ void* thread_func_rr(void* arg) {
         clock_t inicio_quantum = clock();   // Se empieza a contar el quantum
         while (quantum >= (double) (clock() - inicio_quantum) / CLOCKS_PER_SEC) {
             printf("Thread %d - Counter: %d\n", *(int*)arg, count++);
-            if (count >= 1000) {
+            if (count >= 100) {
                 break;
             }
         }
@@ -91,7 +91,7 @@ void first_come_first_served(struct Node* head) {
  * @author Eduardo Bolivar Minguet
  */
 void round_robin(struct Node* head) {
-    quantum = 0.005;
+    quantum = 0.00005;
     queue_length = get_length(head);
     struct Node* current = head;
     while (current != nullptr) {
