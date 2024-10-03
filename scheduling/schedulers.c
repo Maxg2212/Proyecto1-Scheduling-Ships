@@ -18,7 +18,7 @@
  */
 void* thread_func(void* arg) {
     int count = 0;
-    while (count < 1000) {
+    while (count < 10) {
         printf("Thread %d - Counter: %d\n", *(int*)arg, count++);
     }
     return nullptr;
@@ -43,23 +43,26 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER; // Cond pone en espera a hilos y
  */
 void* thread_func_rr(void* arg) {
     int count = 0;
-    while (count < 1000) {
+    while (count < 10) {
+
         pthread_mutex_lock(&mutex);
         while (turn != *(int*)arg) {
             pthread_cond_wait(&cond, &mutex);   // Si no es su turno, el hilo espera
         }
         pthread_mutex_unlock(&mutex);
+
         clock_t inicio_quantum = clock();   // Se empieza a contar el quantum
         while (quantum >= (double) (clock() - inicio_quantum) / CLOCKS_PER_SEC) {
             printf("Thread %d - Counter: %d\n", *(int*)arg, count++);
-            if (count >= 1000) {
+            if (count >= 10) {
                 break;
             }
         }
+
         pthread_mutex_lock(&mutex);
         turn = (turn + 1) % queue_length;   // Le da el turno al siguiente hilo en cola
-        pthread_mutex_unlock(&mutex);
         pthread_cond_signal(&cond);
+        pthread_mutex_unlock(&mutex);
     }
     return nullptr;
 }
@@ -73,12 +76,13 @@ void* thread_func_rr(void* arg) {
  * @param head Puntero a la primera posicion de la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void first_come_first_served(struct Node* head) {
-    while (head != nullptr) {
+struct Node* first_come_first_served(struct Node* head) {
+    while (head != nullptr && get_length(head) > 0) {
         pthread_create(&head->process, NULL, thread_func, &head->pid);
         pthread_join(head->process, NULL);
         head = remove_from_queue(head);
     }
+    return head;
 }
 
 /**
@@ -90,18 +94,19 @@ void first_come_first_served(struct Node* head) {
  * @param head Puntero a la primera posicion de la cola de hilos
  * @author Eduardo Bolivar Minguet
  */
-void round_robin(struct Node* head) {
-    quantum = 0.005;
+struct Node* round_robin(struct Node* head) {
+    quantum = 0.00001;
     queue_length = get_length(head);
     struct Node* current = head;
     while (current != nullptr) {
         pthread_create(&current->process, NULL, thread_func_rr, &current->pid);
         current = current->next;
     }
-    while (head != nullptr) {
+    while (head != nullptr && get_length(head) > 0) {
         pthread_join(head->process, NULL);
         head = remove_from_queue(head);
     }
+    return head;
 }
 
 /**
@@ -118,9 +123,6 @@ struct Node* sort_by_burst_time(struct Node* head) {
     if (head == nullptr || head->next == nullptr) {
         return head; // No se necesita ordenar si hay uno o ningún nodo
     }
-
-    pthread_mutex_lock(&mutex);  // Protege la lista enlazada durante la ordenación
-
     struct Node *i, *j;
     double temp_burst;
     int temp_pid, temp_priority;
@@ -148,9 +150,6 @@ struct Node* sort_by_burst_time(struct Node* head) {
             }
         }
     }
-
-    pthread_mutex_unlock(&mutex);  // Libera el mutex después de ordenar
-
     return head;
 }
 
@@ -165,13 +164,13 @@ struct Node* sort_by_burst_time(struct Node* head) {
  * @param head Puntero a la primera posición de la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void shortest_job_first(struct Node* head) {
+struct Node* shortest_job_first(struct Node* head) {
     pthread_mutex_lock(&mutex);  // Protege el acceso a la lista enlazada mientras se ordena
     head = sort_by_burst_time(head);
     pthread_mutex_unlock(&mutex);  // Libera el mutex una vez que se ha ordenado
 
     // Ejecutar los hilos en el orden de menor a mayor burst_time
-    while (head != nullptr) {
+    while (head != nullptr && get_length(head) > 0) {
         pthread_create(&head->process, NULL, thread_func, &head->pid);
         pthread_join(head->process, NULL);
 
@@ -179,4 +178,5 @@ void shortest_job_first(struct Node* head) {
         head = remove_from_queue(head);
         pthread_mutex_unlock(&mutex);  // Libera el mutex después de eliminar
     }
+    return head;
 }
