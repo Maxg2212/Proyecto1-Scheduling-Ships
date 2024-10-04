@@ -76,13 +76,12 @@ void* thread_func_rr(void* arg) {
  * @param head Puntero a la primera posicion de la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-struct Node* first_come_first_served(struct Node* head) {
-    while (head != nullptr && get_length(head) > 0) {
-        pthread_create(&head->process, NULL, thread_func, &head->pid);
-        pthread_join(head->process, NULL);
-        head = remove_from_queue(head);
+void first_come_first_served(struct Node** head) {
+    while (head != nullptr && get_length(*head) > 0) {
+        pthread_create(&(*head)->process, NULL, thread_func, &(*head)->pid);
+        pthread_join((*head)->process, NULL);
+        remove_from_queue(head);
     }
-    return head;
 }
 
 /**
@@ -94,19 +93,18 @@ struct Node* first_come_first_served(struct Node* head) {
  * @param head Puntero a la primera posicion de la cola de hilos
  * @author Eduardo Bolivar Minguet
  */
-struct Node* round_robin(struct Node* head) {
+void round_robin(struct Node** head) {
     quantum = 0.00001;
-    queue_length = get_length(head);
-    struct Node* current = head;
+    queue_length = get_length(*head);
+    struct Node* current = *head;
     while (current != nullptr) {
         pthread_create(&current->process, NULL, thread_func_rr, &current->pid);
         current = current->next;
     }
-    while (head != nullptr && get_length(head) > 0) {
-        pthread_join(head->process, NULL);
-        head = remove_from_queue(head);
+    while (*head != nullptr && get_length(*head) > 0) {
+        pthread_join((*head)->process, NULL);
+        remove_from_queue(head);
     }
-    return head;
 }
 
 /**
@@ -164,19 +162,18 @@ struct Node* sort_by_burst_time(struct Node* head) {
  * @param head Puntero a la primera posición de la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-struct Node* shortest_job_first(struct Node* head) {
+void shortest_job_first(struct Node** head) {
     pthread_mutex_lock(&mutex);  // Protege el acceso a la lista enlazada mientras se ordena
-    head = sort_by_burst_time(head);
+    *head = sort_by_burst_time(*head);
     pthread_mutex_unlock(&mutex);  // Libera el mutex una vez que se ha ordenado
 
     // Ejecutar los hilos en el orden de menor a mayor burst_time
-    while (head != nullptr && get_length(head) > 0) {
-        pthread_create(&head->process, NULL, thread_func, &head->pid);
-        pthread_join(head->process, NULL);
+    while (*head != nullptr && get_length(*head) > 0) {
+        pthread_create(&(*head)->process, NULL, thread_func, &(*head)->pid);
+        pthread_join((*head)->process, NULL);
 
         pthread_mutex_lock(&mutex);  // Protege la lista enlazada al eliminar el nodo
-        head = remove_from_queue(head);
+        remove_from_queue(head);
         pthread_mutex_unlock(&mutex);  // Libera el mutex después de eliminar
     }
-    return head;
 }

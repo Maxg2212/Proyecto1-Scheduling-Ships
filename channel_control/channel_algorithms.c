@@ -21,11 +21,10 @@ void* identify(void* arg) {
  * @return La cola sin el elemento recien ejecutado.
  * @author Eduardo Bolivar Minguet
  */
-struct Node* process_queue(struct Node* queue) {
-    pthread_create(&queue->process, NULL, identify, &queue->pid);
-    pthread_join(queue->process, NULL);
-    queue = remove_from_queue(queue);
-    return queue;
+void process_queue(struct Node** queue) {
+    pthread_create(&(*queue)->process, NULL, identify, &(*queue)->pid);
+    pthread_join((*queue)->process, NULL);
+    remove_from_queue(queue);
 }
 
 /**
@@ -39,18 +38,18 @@ struct Node* process_queue(struct Node* queue) {
  * @param l_queue Cola de barcos izquierda
  * @author Eduardo Bolivar Minguet
  */
-void equity(int const W, struct Node* r_queue, struct Node* l_queue) {
+void equity(int const W, struct Node** r_queue, struct Node** l_queue) {
     int modW = W;
     int flag = 1;
-    while (r_queue != nullptr || l_queue != nullptr) {
+    while (*r_queue != nullptr || *l_queue != nullptr) {
         if (modW == 0) {
             flag = (flag + 1) % 2;
             modW = W;
         }
-        if (flag && r_queue != nullptr) {
-            r_queue = process_queue(r_queue);
-        } else if (!flag && l_queue != nullptr) {
-            l_queue = process_queue(l_queue);
+        if (flag && *r_queue != nullptr) {
+            process_queue(r_queue);
+        } else if (!flag && *l_queue != nullptr) {
+            process_queue(l_queue);
         }
         modW--;
     }
@@ -67,18 +66,18 @@ void equity(int const W, struct Node* r_queue, struct Node* l_queue) {
  * @param l_queue Cola de barcos izquierda.
  * @author Eduardo Bolivar Minguet
  */
-void signboard(double const swap_time, struct Node* r_queue, struct Node* l_queue) {
+void signboard(double const swap_time, struct Node** r_queue, struct Node** l_queue) {
     int flag = 1;
     clock_t start = clock();
-    while (r_queue != nullptr || l_queue != nullptr) {
+    while (*r_queue != nullptr || *l_queue != nullptr) {
         if (swap_time <= (double) (clock() - start) / CLOCKS_PER_SEC) {
             flag = (flag + 1) % 2;
             start = clock();
         }
-        if (flag && r_queue != nullptr) {
-            r_queue = process_queue(r_queue);
-        } else if (!flag && l_queue != nullptr) {
-            l_queue = process_queue(l_queue);
+        if (flag && *r_queue != nullptr) {
+            process_queue(r_queue);
+        } else if (!flag && *l_queue != nullptr) {
+            process_queue(l_queue);
         }
     }
 }
@@ -92,9 +91,9 @@ void signboard(double const swap_time, struct Node* r_queue, struct Node* l_queu
  * @param l_queue COla de barcos izquierda.
  * @author Eduardo Bolivar Minguet
  */
-void tico(struct Node* r_queue, struct Node* l_queue) {
+void tico(struct Node** r_queue, struct Node** l_queue) {
     while (r_queue != nullptr || l_queue != nullptr) {
-        r_queue = process_queue(r_queue);
-        l_queue = process_queue(l_queue);
+        process_queue(r_queue);
+        process_queue(l_queue);
     }
 }

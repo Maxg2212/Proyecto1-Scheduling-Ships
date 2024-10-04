@@ -1,0 +1,7 @@
+Scheduler=FCFS
+Flow=Equity
+ControlParameter=3
+ChannelLength=10
+BoatSpeed=4
+BoatsInTheRight=10
+BoatsInTheLeft=6
