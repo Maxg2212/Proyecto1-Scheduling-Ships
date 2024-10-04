@@ -1,5 +1,5 @@
 Scheduler=FCFS
-Flow=Letrero
+Flow=Tico
 W=2
 TimeSwap=0.00005
 ChannelLength=430
