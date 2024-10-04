@@ -1,7 +1,8 @@
 Scheduler=FCFS
-Flow=Equity
-ControlParameter=3
-ChannelLength=10
-BoatSpeed=4
-BoatsInTheRight=10
-BoatsInTheLeft=6
+Flow=Letrero
+W=2
+TimeSwap=0.00005
+ChannelLength=430
+BoatSpeed=40
+BoatsInTheRight=4
+BoatsInTheLeft=8

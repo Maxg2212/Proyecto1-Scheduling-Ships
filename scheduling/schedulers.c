@@ -25,7 +25,7 @@ void* thread_func(void* arg) {
 }
 
 int turn = 0;   // Se define que hilo tiene el turno de ejecucion, inicia en 0, el primero en cola.
-double quantum; // Tiempo de ejecucion de cada hilo en su turno
+double root_quantum; // Tiempo de ejecucion de cada hilo en su turno
 int queue_length;   // Tamano de la cola de hilos
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex protege condiciones de carrera.
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER; // Cond pone en espera a hilos y avisarles cuando sea su turno.
@@ -52,7 +52,7 @@ void* thread_func_rr(void* arg) {
         pthread_mutex_unlock(&mutex);
 
         clock_t inicio_quantum = clock();   // Se empieza a contar el quantum
-        while (quantum >= (double) (clock() - inicio_quantum) / CLOCKS_PER_SEC) {
+        while (root_quantum >= (double) (clock() - inicio_quantum) / CLOCKS_PER_SEC) {
             printf("Thread %d - Counter: %d\n", *(int*)arg, count++);
             if (count >= 10) {
                 break;
@@ -93,8 +93,8 @@ void first_come_first_served(struct Node** head) {
  * @param head Puntero a la primera posicion de la cola de hilos
  * @author Eduardo Bolivar Minguet
  */
-void round_robin(struct Node** head) {
-    quantum = 0.00001;
+void round_robin(struct Node** head, double quantum) {
+    root_quantum = quantum;
     queue_length = get_length(*head);
     struct Node* current = *head;
     while (current != nullptr) {

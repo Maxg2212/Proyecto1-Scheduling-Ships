@@ -8,7 +8,8 @@
 #include <stdio.h>
 
 void* identify(void* arg) {
-    printf("Soy el hilo %d\n", *(int*)arg);
+    struct Node* currentNode = (struct Node*)arg;
+    printf("Soy el hilo %d, soy un barco %s y mi tiempo de duracion es: %.5f\n", currentNode->pid, currentNode->boat_type, currentNode->burst_time);
     return nullptr;
 }
 
@@ -22,8 +23,9 @@ void* identify(void* arg) {
  * @author Eduardo Bolivar Minguet
  */
 void process_queue(struct Node** queue) {
-    pthread_create(&(*queue)->process, NULL, identify, &(*queue)->pid);
-    pthread_join((*queue)->process, NULL);
+    struct Node* currentNode = *queue;
+    pthread_create(&currentNode->process, NULL, identify, currentNode);
+    pthread_join(currentNode->process, NULL);
     remove_from_queue(queue);
 }
 
