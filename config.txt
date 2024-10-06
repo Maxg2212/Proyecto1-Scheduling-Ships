@@ -1,8 +1,12 @@
 Scheduler=FCFS
-Flow=Tico
-W=2
+Flow=Equidad
+W=3
 TimeSwap=0.00005
 ChannelLength=430
 BoatSpeed=40
-BoatsInTheRight=4
-BoatsInTheLeft=8
+NormalBoatsRight=4
+FishingBoatsRight=3
+PatrolBoatsRight=0
+NormalBoatsLeft=2
+FishingBoatsLeft=3
+PatrolBoatsLeft=5

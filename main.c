@@ -8,7 +8,9 @@
 // Configuration parameters
 char scheduler[20];
 char flow[20];
-int w, channelLength, boatSpeed, boatsInTheRight, boatsInTheLeft;
+int w, channelLength, boatSpeed;
+int normalBoatsRight, fishingBoatsRight, patrolBoatsRight;
+int normalBoatsLeft, fishingBoatsLeft, patrolBoatsLeft;
 double timeSwap;
 
 struct Node* left_queue = nullptr;
@@ -38,24 +40,32 @@ void add_boat_by_key() {
     }
 }
 
-void add_boat(int const side) {
+void add_boat(int side) {
     pthread_t thread;
-    double boat_burst_time = 0;
     char b_type[10];
     strcpy(b_type, get_random_boat());
-    if (strcmp(b_type, "Normal") == 0) {
-        boat_burst_time = (double) channelLength / boatSpeed;
-    } else if (strcmp(b_type, "Pesquero") == 0) {
-        boat_burst_time = (double) channelLength / (1.5 * boatSpeed);
-    } else if (strcmp(b_type, "Patrulla") == 0) {
-        boat_burst_time = (double) channelLength / (3 * boatSpeed);
-    }
-    if (side) {
-        add_to_queue(&right_queue, id++, boat_burst_time, 0, b_type, thread);
-        left_queue->boat_position = 100;
+    if (side == 0) {
+        if (strcmp(b_type, "Normal") == 0 && normalBoatsLeft > 0) {
+            add_to_queue(&left_queue, id++, (double) channelLength / boatSpeed, 0, b_type, thread);
+            normalBoatsLeft--;
+        } else if (strcmp(b_type, "Pesquero") == 0 && fishingBoatsLeft > 0) {
+            add_to_queue(&left_queue, id++, (double) channelLength / (1.5 * boatSpeed), 0, b_type, thread);
+            fishingBoatsLeft--;
+        } else if (strcmp(b_type, "Patrulla") == 0 && patrolBoatsLeft > 0) {
+            add_to_queue(&left_queue, id++, (double) channelLength / (4 * boatSpeed), 0, b_type, thread);
+            patrolBoatsLeft--;
+        }
     } else {
-        add_to_queue(&left_queue, id++, boat_burst_time, 0, b_type, thread);
-        left_queue->boat_position = 0;
+        if (strcmp(b_type, "Normal") == 0 && normalBoatsRight > 0) {
+            add_to_queue(&right_queue, id++, (double) channelLength / boatSpeed, 0, b_type, thread);
+            normalBoatsRight--;
+        } else if (strcmp(b_type, "Pesquero") == 0 && fishingBoatsRight > 0) {
+            add_to_queue(&right_queue, id++, (double) channelLength / (1.5 * boatSpeed), 0, b_type, thread);
+            fishingBoatsRight--;
+        } else if (strcmp(b_type, "Patrulla") == 0 && patrolBoatsRight > 0) {
+            add_to_queue(&right_queue, id++, (double) channelLength / (4 * boatSpeed), 0, b_type, thread);
+            patrolBoatsRight--;
+        }
     }
 }
 
@@ -90,10 +100,18 @@ void read_config() {
             channelLength = atoi(value);
         } else if (strcmp(key, "BoatSpeed") == 0) {
             boatSpeed = atoi(value);
-        } else if (strcmp(key, "BoatsInTheRight") == 0) {
-            boatsInTheRight = atoi(value);
-        } else if (strcmp(key, "BoatsInTheLeft") == 0) {
-            boatsInTheLeft = atoi(value);
+        } else if (strcmp(key, "NormalBoatsRight") == 0) {
+            normalBoatsRight = atoi(value);
+        } else if (strcmp(key, "FishingBoatsRight") == 0) {
+            fishingBoatsRight = atoi(value);
+        } else if (strcmp(key, "PatrolBoatsRight") == 0) {
+            patrolBoatsRight = atoi(value);
+        } else if (strcmp(key, "NormalBoatsLeft") == 0) {
+            normalBoatsLeft = atoi(value);
+        } else if (strcmp(key, "FishingBoatsLeft") == 0) {
+            fishingBoatsLeft = atoi(value);
+        } else if (strcmp(key, "PatrolBoatsLeft") == 0) {
+            patrolBoatsLeft = atoi(value);
         }
     }
 
@@ -114,13 +132,13 @@ int main() {
         return 1;
     }
 
-
-    for (int i = 0; i < boatsInTheLeft; i++) {
+    while (normalBoatsLeft + fishingBoatsLeft + patrolBoatsLeft > 0) {
         add_boat(0);
     }
-    for (int i = 0; i < boatsInTheRight; i++) {
+    while (normalBoatsRight + fishingBoatsRight + patrolBoatsRight > 0) {
         add_boat(1);
     }
+
     if (strcmp(flow, "Equidad") == 0) {
         equity(w, &right_queue, &left_queue);
     } else if (strcmp(flow, "Letrero") == 0) {
@@ -129,7 +147,7 @@ int main() {
         tico(&right_queue, &left_queue);
     } else {
         perror("Unexpected Flow Algorithm");
-        exit(1);
+        return 1;
     }
     return 0;
 }
