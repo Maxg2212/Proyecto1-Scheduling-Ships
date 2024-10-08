@@ -20,8 +20,31 @@
  * @return La cola sin el elemento recien ejecutado.
  * @author Eduardo Bolivar Minguet
  */
-void process_queue_by_equity(struct Node** queue, int w, char scheduler[10]) {
-
+void process_queues(struct Node** r_queue, struct Node** l_queue, int W, double swapTime, double rr_quantum, char scheduler[10], int clength) {
+    if (strcmp(scheduler, "FCFS") == 0) {
+        while (*r_queue != nullptr || *l_queue != nullptr) {
+            first_come_first_served(l_queue, W, swapTime, clength);
+            first_come_first_served(r_queue, W, swapTime, clength);
+        }
+    } else if (strcmp(scheduler, "RR") == 0) {
+        while (*r_queue != nullptr || *l_queue != nullptr) {
+            round_robin(l_queue, W, swapTime, rr_quantum, clength);
+            round_robin(r_queue, W, swapTime, rr_quantum, clength);
+        }
+    } else if (strcmp(scheduler, "SJF") == 0) {
+        while (*r_queue != nullptr || *l_queue != nullptr) {
+            shortest_job_first(l_queue, W, swapTime, clength);
+            shortest_job_first(r_queue, W, swapTime, clength);
+        }
+    } else if (strcmp(scheduler, "Prioridad") == 0) {
+        while (*r_queue != nullptr || *l_queue != nullptr) {
+            priority(l_queue, W, swapTime, clength);
+            priority(r_queue, W, swapTime, clength);
+        }
+    } else {
+        perror("Unknown scheduler");
+        exit(1);
+    }
 }
 
 /**
@@ -36,30 +59,7 @@ void process_queue_by_equity(struct Node** queue, int w, char scheduler[10]) {
  * @author Eduardo Bolivar Minguet
  */
 void equity(int const W, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
-    if (strcmp(scheduler, "FCFS") == 0) {
-        while (*r_queue != nullptr || *l_queue != nullptr) {
-            first_come_first_served(l_queue, W, clength);
-            first_come_first_served(r_queue, W, clength);
-        }
-    } else if (strcmp(scheduler, "RR") == 0) {
-        while (*r_queue != nullptr || *l_queue != nullptr) {
-            round_robin(l_queue, W, rr_quantum, clength);
-            round_robin(r_queue, W, rr_quantum, clength);
-        }
-    } else if (strcmp(scheduler, "SJF") == 0) {
-        while (*r_queue != nullptr || *l_queue != nullptr) {
-            shortest_job_first(l_queue, W, clength);
-            shortest_job_first(r_queue, W, clength);
-        }
-    } else if (strcmp(scheduler, "Prioridad") == 0) {
-        while (*r_queue != nullptr || *l_queue != nullptr) {
-            priority(l_queue, W, clength);
-            priority(r_queue, W, clength);
-        }
-    } else {
-        perror("Unknown scheduler");
-        exit(1);
-    }
+    process_queues(r_queue, l_queue, W, 0, rr_quantum, scheduler, clength);
 }
 
 /**
@@ -73,20 +73,8 @@ void equity(int const W, struct Node** r_queue, struct Node** l_queue, char sche
  * @param l_queue Cola de barcos izquierda.
  * @author Eduardo Bolivar Minguet
  */
-void signboard(double const swap_time, struct Node** r_queue, struct Node** l_queue, char scheduler[20], int clength) {
-    int flag = 1;
-    clock_t start = clock();
-    while (*r_queue != nullptr || *l_queue != nullptr) {
-        if (swap_time <= (double) (clock() - start) / CLOCKS_PER_SEC) {
-            flag = (flag + 1) % 2;
-            start = clock();
-        }
-        if (flag && *r_queue != nullptr) {
-            //process_queue(r_queue);
-        } else if (!flag && *l_queue != nullptr) {
-            //process_queue(l_queue);
-        }
-    }
+void signboard(double const swap_time, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
+    process_queues(r_queue, l_queue, 0, swap_time, rr_quantum, scheduler, clength);
 }
 
 /**
@@ -98,7 +86,7 @@ void signboard(double const swap_time, struct Node** r_queue, struct Node** l_qu
  * @param l_queue COla de barcos izquierda.
  * @author Eduardo Bolivar Minguet
  */
-void tico(struct Node** r_queue, struct Node** l_queue, char scheduler[20], int clength) {
+void tico(struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
     while (r_queue != nullptr || l_queue != nullptr) {
         //process_queue(r_queue);
         //process_queue(l_queue);

@@ -161,9 +161,9 @@ int main() {
     if (strcmp(flow, "Equidad") == 0) {
         equity(w, &right_queue, &left_queue, scheduler, quantum, channelLength);
     } else if (strcmp(flow, "Letrero") == 0) {
-        signboard(timeSwap, &right_queue, &left_queue, scheduler, channelLength);
+        signboard(timeSwap, &right_queue, &left_queue, scheduler, quantum, channelLength);
     } else if (strcmp(flow, "Tico") == 0) {
-        tico(&right_queue, &left_queue, scheduler, channelLength);
+        tico(&right_queue, &left_queue, scheduler, quantum,  channelLength);
     } else {
         perror("Unexpected Flow Algorithm");
         return 1;
