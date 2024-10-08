@@ -13,4 +13,4 @@ PatrolBoatsLeft=3
 NormalPriority=20
 FishingPriority=20
 PatrolDeadline=3
-RRQuantum=0.005
+RRQuantum=0.00005

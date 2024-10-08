@@ -148,8 +148,8 @@ int main() {
     }
 
     //first_come_first_served(&right_queue, channelLength);
-    //round_robin(&left_queue, 0, quantum, channelLength);
-    earliest_deadline_first(&left_queue, channelLength);
+    round_robin(&left_queue, 0, quantum, channelLength);
+    //earliest_deadline_first(&left_queue, channelLength);
     //if (strcmp(flow, "Equidad") == 0) {
         //equity(w, &right_queue, &left_queue);
     //} else if (strcmp(flow, "Letrero") == 0) {

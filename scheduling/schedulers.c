@@ -62,6 +62,9 @@ void* thread_func_rr(void* arg) {
         clock_t const quantum_start = clock();
         while (turn == node->pid && root_quantum > (double) (clock() - quantum_start) / CLOCKS_PER_SEC) {
             update_position(node, direction);
+            if ((direction == 1 && node->boat_position > channel) || (direction == -1 && node->boat_position < 0)) {
+                break;
+            }
         }
         pthread_mutex_lock(&mutex);
         turn++;
