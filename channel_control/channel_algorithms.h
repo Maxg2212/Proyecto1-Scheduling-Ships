@@ -7,8 +7,8 @@
 
 #include "../scheduling/linked_list.h"
 
-void equity(int W, struct Node** r_queue, struct Node** l_queue);
-void signboard(double swap_time, struct Node** r_queue, struct Node** l_queue);
-void tico(struct Node** r_queue, struct Node** l_queue);
+void equity(int W, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength);
+void signboard(double swap_time, struct Node** r_queue, struct Node** l_queue, char scheduler[20], int clength);
+void tico(struct Node** r_queue, struct Node** l_queue, char scheduler[20], int clength);
 
 #endif //CHANNEL_ALGORITHMS_H

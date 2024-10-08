@@ -12,7 +12,8 @@ int w, channelLength, boatSpeed, normalPriority, fishingPriority, patrolDeadline
 int normalBoatsRight, fishingBoatsRight, patrolBoatsRight;
 int normalBoatsLeft, fishingBoatsLeft, patrolBoatsLeft;
 double timeSwap, quantum;
-int totalPatrolBoats;
+
+int totalPatrolBoats, tmp1, tmp2;
 
 struct Node* left_queue = nullptr;
 struct Node* right_queue = nullptr;
@@ -124,6 +125,8 @@ void read_config() {
         }
     }
     totalPatrolBoats = patrolBoatsLeft + patrolBoatsRight;
+    tmp1 = patrolBoatsLeft;
+    tmp2 = patrolBoatsRight;
     // Close the file
     fclose(file);
 }
@@ -147,18 +150,23 @@ int main() {
         add_boat(1);
     }
 
-    //first_come_first_served(&right_queue, channelLength);
-    round_robin(&left_queue, 0, quantum, channelLength);
-    //earliest_deadline_first(&left_queue, channelLength);
-    //if (strcmp(flow, "Equidad") == 0) {
-        //equity(w, &right_queue, &left_queue);
-    //} else if (strcmp(flow, "Letrero") == 0) {
-        //signboard(timeSwap, &right_queue, &left_queue);
-    //} else if (strcmp(flow, "Tico") == 0) {
-        //tico(&right_queue, &left_queue);
-    //} else {
-        //perror("Unexpected Flow Algorithm");
-        //return 1;
-    //}
+    patrolBoatsLeft = tmp1;
+    patrolBoatsRight = tmp2;
+
+    if (totalPatrolBoats > 0) {
+        earliest_deadline_first(&left_queue, patrolBoatsLeft, channelLength);
+        earliest_deadline_first(&right_queue, patrolBoatsRight, channelLength);
+    }
+
+    if (strcmp(flow, "Equidad") == 0) {
+        equity(w, &right_queue, &left_queue, scheduler, quantum, channelLength);
+    } else if (strcmp(flow, "Letrero") == 0) {
+        signboard(timeSwap, &right_queue, &left_queue, scheduler, channelLength);
+    } else if (strcmp(flow, "Tico") == 0) {
+        tico(&right_queue, &left_queue, scheduler, channelLength);
+    } else {
+        perror("Unexpected Flow Algorithm");
+        return 1;
+    }
     return 0;
 }

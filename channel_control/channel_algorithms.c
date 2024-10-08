@@ -6,12 +6,10 @@
 #include <time.h>
 #include "channel_algorithms.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-void* identify(void* arg) {
-    struct Node* currentNode = (struct Node*)arg;
-    printf("Soy el hilo %d, soy un barco %s y mi tiempo de duracion es: %.5f\n", currentNode->pid, currentNode->boat_type, currentNode->burst_time);
-    return nullptr;
-}
+#include "../scheduling/schedulers.h"
 
 /**
  * PROCESS_QUEUE
@@ -22,11 +20,8 @@ void* identify(void* arg) {
  * @return La cola sin el elemento recien ejecutado.
  * @author Eduardo Bolivar Minguet
  */
-void process_queue(struct Node** queue) {
-    struct Node* currentNode = *queue;
-    pthread_create(&currentNode->process, NULL, identify, currentNode);
-    pthread_join(currentNode->process, NULL);
-    remove_from_queue(queue);
+void process_queue_by_equity(struct Node** queue, int w, char scheduler[10]) {
+
 }
 
 /**
@@ -40,20 +35,30 @@ void process_queue(struct Node** queue) {
  * @param l_queue Cola de barcos izquierda
  * @author Eduardo Bolivar Minguet
  */
-void equity(int const W, struct Node** r_queue, struct Node** l_queue) {
-    int modW = W;
-    int flag = 1;
-    while (*r_queue != nullptr || *l_queue != nullptr) {
-        if (modW == 0) {
-            flag = (flag + 1) % 2;
-            modW = W;
+void equity(int const W, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
+    if (strcmp(scheduler, "FCFS") == 0) {
+        while (*r_queue != nullptr || *l_queue != nullptr) {
+            first_come_first_served(l_queue, W, clength);
+            first_come_first_served(r_queue, W, clength);
         }
-        if (flag && *r_queue != nullptr) {
-            process_queue(r_queue);
-        } else if (!flag && *l_queue != nullptr) {
-            process_queue(l_queue);
+    } else if (strcmp(scheduler, "RR") == 0) {
+        while (*r_queue != nullptr || *l_queue != nullptr) {
+            round_robin(l_queue, W, rr_quantum, clength);
+            round_robin(r_queue, W, rr_quantum, clength);
         }
-        modW--;
+    } else if (strcmp(scheduler, "SJF") == 0) {
+        while (*r_queue != nullptr || *l_queue != nullptr) {
+            shortest_job_first(l_queue, W, clength);
+            shortest_job_first(r_queue, W, clength);
+        }
+    } else if (strcmp(scheduler, "Prioridad") == 0) {
+        while (*r_queue != nullptr || *l_queue != nullptr) {
+            priority(l_queue, W, clength);
+            priority(r_queue, W, clength);
+        }
+    } else {
+        perror("Unknown scheduler");
+        exit(1);
     }
 }
 
@@ -68,7 +73,7 @@ void equity(int const W, struct Node** r_queue, struct Node** l_queue) {
  * @param l_queue Cola de barcos izquierda.
  * @author Eduardo Bolivar Minguet
  */
-void signboard(double const swap_time, struct Node** r_queue, struct Node** l_queue) {
+void signboard(double const swap_time, struct Node** r_queue, struct Node** l_queue, char scheduler[20], int clength) {
     int flag = 1;
     clock_t start = clock();
     while (*r_queue != nullptr || *l_queue != nullptr) {
@@ -77,9 +82,9 @@ void signboard(double const swap_time, struct Node** r_queue, struct Node** l_qu
             start = clock();
         }
         if (flag && *r_queue != nullptr) {
-            process_queue(r_queue);
+            //process_queue(r_queue);
         } else if (!flag && *l_queue != nullptr) {
-            process_queue(l_queue);
+            //process_queue(l_queue);
         }
     }
 }
@@ -93,9 +98,9 @@ void signboard(double const swap_time, struct Node** r_queue, struct Node** l_qu
  * @param l_queue COla de barcos izquierda.
  * @author Eduardo Bolivar Minguet
  */
-void tico(struct Node** r_queue, struct Node** l_queue) {
+void tico(struct Node** r_queue, struct Node** l_queue, char scheduler[20], int clength) {
     while (r_queue != nullptr || l_queue != nullptr) {
-        process_queue(r_queue);
-        process_queue(l_queue);
+        //process_queue(r_queue);
+        //process_queue(l_queue);
     }
 }

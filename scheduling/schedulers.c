@@ -5,19 +5,20 @@
 #include "schedulers.h"
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 int channel = 0;
 
-void update_position(struct Node* node, int direction) {
+void update_position(struct Node* node, int direction, double time) {
     // Update the boat position based on direction
     if (direction > 0) {
         node->boat_position += channel / node->burst_time;
     } else {
         node->boat_position -= channel / node->burst_time;
     }
-    printf("Hilo: %d - Bote: %s - Posicion: %f\n", node->pid, node->boat_type, node->boat_position);
+    printf("Hilo: %d - Bote: %s - Posicion: %f - Time in CPU: %f\n", node->pid, node->boat_type, node->boat_position, time);
 }
 
 /**
@@ -33,16 +34,11 @@ void* thread_func(void* arg) {
     struct Node* node = (struct Node*)arg;
     int const direction = (node->boat_position == 0) ? 1 : -1;
     while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
-        update_position(node, direction);
+        update_position(node, direction, 0);
     }
     return nullptr;
 }
 
-int turn;   // Se define que hilo tiene el turno de ejecucion, inicia en 0, el primero en cola.
-int base;
-double root_quantum; // Tiempo de ejecucion de cada hilo en su turno
-int queue_length;   // Tamano de la cola de hilos
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex protege condiciones de carrera.
 /**
  * THREAD_FUNC_RR
  *
@@ -54,26 +50,27 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex protege condiciones
  * @return puntero a nulo
  * @author Eduardo Bolivar Minguet
  */
+int turn, base, currently_executing;
+double quantum1;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void* thread_func_rr(void* arg) {
     struct Node* node = (struct Node*)arg;
+
     int const direction = (node->boat_position == 0) ? 1 : -1;
     while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
-        clock_t const quantum_start = clock();
-        while (turn == node->pid && root_quantum > (double) (clock() - quantum_start) / CLOCKS_PER_SEC) {
-            update_position(node, direction);
-            if ((direction == 1 && node->boat_position > channel) || (direction == -1 && node->boat_position < 0)) {
-                break;
-            }
-        }
         pthread_mutex_lock(&mutex);
-        turn++;
-        pthread_mutex_unlock(&mutex);
-        if (turn > base + queue_length) {
-            pthread_mutex_lock(&mutex);
-            turn = base + 1;
-            pthread_mutex_unlock(&mutex);
+        if (turn == node->pid) {
+            clock_t const quantum_start = clock();
+            while (quantum1 > (double) (clock() - quantum_start) / CLOCKS_PER_SEC) {
+                update_position(node, direction, (double) (clock() - quantum_start) / CLOCKS_PER_SEC);
+                if ((direction == 1 && node->boat_position > channel) || (direction == -1 && node->boat_position < 0)) {
+                    break;
+                }
+            }
+            turn = (turn + 1) % (base + currently_executing);
         }
+        pthread_mutex_unlock(&mutex);
     }
     return nullptr;
 }
@@ -87,26 +84,25 @@ void* thread_func_rr(void* arg) {
  * @param head Puntero a la primera posicion de la cola de hilos
  * @author Eduardo Bolivar Minguet
  */
-void round_robin(struct Node** head, int const offset, double quantum, int length) {
-    int flag = ((*head)->boat_position == 0) ? 0 : 1;
+void round_robin(struct Node** head, int numOfThreads, double local_quantum, int length) {
     channel = length;
-    root_quantum = quantum;
-    queue_length = get_length(*head);
-    if (flag) {
-        turn = offset + 1;
-        base = offset;
-    } else {
-        turn = 1;
-        base = 0;
-    }
+    turn = (*head)->pid;
+    base = turn - 1;
+    quantum1 = local_quantum;
+    currently_executing = numOfThreads;
+
+    int tmp = numOfThreads;
+
     struct Node* current = *head;
-    while (current != nullptr) {
+    while (tmp > 0 && current != nullptr) {
         pthread_create(&current->process, nullptr, thread_func_rr, current);
         current = current->next;
+        tmp--;
     }
-    while (*head != nullptr) {
+    while (numOfThreads > 0 && *head != nullptr) {
         pthread_join((*head)->process, nullptr);
         remove_from_queue(head);
+        numOfThreads--;
     }
 }
 
@@ -155,9 +151,9 @@ struct Node* sort_by_priority(struct Node* head) {
     return head;
 }
 
-void priority(struct Node** head, int length) {
+void priority(struct Node** head, int const numOfThreads, int const length) {
     *head = sort_by_priority(*head);
-    first_come_first_served(head, length);
+    first_come_first_served(head, numOfThreads, length);
 }
 
 /**
@@ -197,9 +193,9 @@ struct Node* sort_by_burst_time(struct Node* head) {
  * @param head Puntero a la primera posición de la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void shortest_job_first(struct Node** head, int length) {
+void shortest_job_first(struct Node** head, int const numOfThreads, int const length) {
     *head = sort_by_burst_time(*head);
-    first_come_first_served(head, length);
+    first_come_first_served(head, numOfThreads, length);
 }
 
 /**
@@ -211,12 +207,13 @@ void shortest_job_first(struct Node** head, int length) {
  * @param head Puntero a la primera posicion de la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void first_come_first_served(struct Node** head, int  length) {
+void first_come_first_served(struct Node** head, int numOfThreads, int const length) {
     channel = length;
-    while (*head != nullptr && get_length(*head) > 0) {
+    while (numOfThreads > 0 && *head != nullptr) {
         pthread_create(&(*head)->process, nullptr, thread_func, *head);
         pthread_join((*head)->process, nullptr);
         remove_from_queue(head);
+        numOfThreads--;
     }
 }
 
@@ -237,7 +234,7 @@ struct Node* sort_by_patrols(struct Node* head) {
     return head;
 }
 
-void earliest_deadline_first(struct Node** head, int length) {
+void earliest_deadline_first(struct Node** head, int const numOfPatrols, int const length) {
     *head = sort_by_patrols(*head);
-    first_come_first_served(head, length);
+    first_come_first_served(head, numOfPatrols, length);
 }
