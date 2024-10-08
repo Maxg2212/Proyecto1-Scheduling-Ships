@@ -135,7 +135,7 @@ void mutex_test(){
     sleep(12);
 }
 
-int main() {
+int mainfunc() {
 
 
     //creation_test();
