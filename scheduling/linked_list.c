@@ -22,7 +22,7 @@
  *
  * @author Eduardo Bolivar Minguet
  */
-struct Node* create_node(int const id, double const burst_time, int const priority, char boat_type[10], double const position, pthread_t const process) {
+struct Node* create_node(int const id, double const burst_time, int const priority, char boat_type[10], double const position, CEthread_t* process) {
     struct Node* new_node = malloc(sizeof(struct Node));
     new_node->pid = id;
     new_node->burst_time = burst_time;
@@ -48,7 +48,7 @@ struct Node* create_node(int const id, double const burst_time, int const priori
  *
  * @author Eduardo Bolivar
  */
-void add_to_queue(struct Node** queue_ref, int const id, double const burst_time, int const priority, char* boat_type, double position, pthread_t const process) {
+void add_to_queue(struct Node** queue_ref, int const id, double const burst_time, int const priority, char* boat_type, double position, CEthread_t* process) {
     if (*queue_ref == nullptr) {
         *queue_ref = create_node(id, burst_time, priority, boat_type, position, process);
     } else {

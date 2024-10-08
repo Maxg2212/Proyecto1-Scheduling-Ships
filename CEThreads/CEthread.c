@@ -365,6 +365,7 @@ void add_thread(pid_t target, CEthread_t** CEthread_ptr){
             threads_pid[i] = target;
             // Free current thrash
             free(threads_ptr[i]);
+            threads_pid[i] = NULL;
             // Set ptr for management
             threads_ptr[i] = *CEthread_ptr;
 

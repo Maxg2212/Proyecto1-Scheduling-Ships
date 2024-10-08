@@ -4,6 +4,7 @@
 #include "scheduling/linked_list.h"
 #include "scheduling/schedulers.h"
 #include <string.h>
+#include <time.h>
 
 // Configuration parameters
 char scheduler[20];
@@ -28,7 +29,7 @@ const char* get_random_boat() {
 }
 
 void add_boat_by_key() {
-    pthread_t thread;
+    CEthread_t* thread;
     int side = (rand() % 2) + 1;
     switch (side) {
         case 1:
@@ -43,7 +44,7 @@ void add_boat_by_key() {
 }
 
 void add_boat(const int side) {
-    constexpr pthread_t thread = 0;
+    CEthread_t* thread = nullptr;
     char b_type[10];
     strcpy(b_type, get_random_boat());
     if (side == 0) {

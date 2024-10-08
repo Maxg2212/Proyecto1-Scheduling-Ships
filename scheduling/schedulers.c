@@ -35,7 +35,7 @@ void* thread_func(void* arg) {
     while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
         update_position(node, direction, 0);
     }
-    printf("Hilo: %d - Bote: %s - Posicion: %f\n", node->pid, node->boat_type, node->boat_position);
+    printf("Hilo: %d - Bote: %s - Cola: %s\n", node->pid, node->boat_type, (direction == -1) ? "Izquierda" : "Derecha");
     return nullptr;
 }
 
@@ -195,15 +195,15 @@ void first_come_first_served(struct Node** head, int W, double swapTime, int con
     channel = length;
     int const flag = (W == 0) ? 0 : 1;
     while (flag && W > 0 && *head != nullptr) {
-        pthread_create(&(*head)->process, nullptr, thread_func, *head);
-        pthread_join((*head)->process, nullptr);
+        CEthread_create(&(*head)->process, nullptr, thread_func, *head);
+        CEthread_join((*head)->process);
         remove_from_queue(head);
         W--;
     }
     clock_t letrero_start = clock();
     while (!flag && swapTime > (double) (clock() - letrero_start) / CLOCKS_PER_SEC && *head != nullptr) {
-        pthread_create(&(*head)->process, nullptr, thread_func, *head);
-        pthread_join((*head)->process, nullptr);
+        CEthread_create(&(*head)->process, nullptr, thread_func, *head);
+        CEthread_join((*head)->process);
         remove_from_queue(head);
     }
 }
