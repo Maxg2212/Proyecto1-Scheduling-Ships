@@ -7,10 +7,10 @@
 
 #include "linked_list.h"
 
-void round_robin(struct Node** head, double quantum);
-void priority(struct Node** head);
-void shortest_job_first(struct Node** head);
-void first_come_first_served(struct Node** head);
-void real_time(struct Node** head, double deadline);
+void round_robin(struct Node** head, int offset, double quantum, int length);
+void priority(struct Node** head, int length);
+void shortest_job_first(struct Node** head, int length);
+void first_come_first_served(struct Node** head, int length);
+void earliest_deadline_first(struct Node** head, int length);
 
 #endif //FCFS_H

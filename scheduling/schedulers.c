@@ -5,7 +5,20 @@
 #include "schedulers.h"
 #include <pthread.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
+
+int channel = 0;
+
+void update_position(struct Node* node, int direction) {
+    // Update the boat position based on direction
+    if (direction > 0) {
+        node->boat_position += channel / node->burst_time;
+    } else {
+        node->boat_position -= channel / node->burst_time;
+    }
+    printf("Hilo: %d - Bote: %s - Posicion: %f\n", node->pid, node->boat_type, node->boat_position);
+}
 
 /**
  * THREAD_FUNC
@@ -17,19 +30,19 @@
  * @author Eduardo Bolivar Minguet
  */
 void* thread_func(void* arg) {
-    int count = 0;
-    while (count < 10) {
-        printf("Thread %d - Counter: %d\n", *(int*)arg, count++);
+    struct Node* node = (struct Node*)arg;
+    int const direction = (node->boat_position == 0) ? 1 : -1;
+    while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
+        update_position(node, direction);
     }
     return nullptr;
 }
 
-int turn = 0;   // Se define que hilo tiene el turno de ejecucion, inicia en 0, el primero en cola.
+int turn;   // Se define que hilo tiene el turno de ejecucion, inicia en 0, el primero en cola.
+int base;
 double root_quantum; // Tiempo de ejecucion de cada hilo en su turno
 int queue_length;   // Tamano de la cola de hilos
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex protege condiciones de carrera.
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER; // Cond pone en espera a hilos y avisarles cuando sea su turno.
-
 /**
  * THREAD_FUNC_RR
  *
@@ -41,47 +54,25 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER; // Cond pone en espera a hilos y
  * @return puntero a nulo
  * @author Eduardo Bolivar Minguet
  */
+
 void* thread_func_rr(void* arg) {
-    int count = 0;
-    while (count < 10) {
-
-        pthread_mutex_lock(&mutex);
-        while (turn != *(int*)arg) {
-            pthread_cond_wait(&cond, &mutex);   // Si no es su turno, el hilo espera
+    struct Node* node = (struct Node*)arg;
+    int const direction = (node->boat_position == 0) ? 1 : -1;
+    while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
+        clock_t const quantum_start = clock();
+        while (turn == node->pid && root_quantum > (double) (clock() - quantum_start) / CLOCKS_PER_SEC) {
+            update_position(node, direction);
         }
-        pthread_mutex_unlock(&mutex);
-
-        clock_t inicio_quantum = clock();   // Se empieza a contar el quantum
-        while (root_quantum >= (double) (clock() - inicio_quantum) / CLOCKS_PER_SEC) {
-            printf("Thread %d - Counter: %d\n", *(int*)arg, count++);
-            if (count >= 10) {
-                break;
-            }
-        }
-
         pthread_mutex_lock(&mutex);
-        turn = (turn + 1) % queue_length;   // Le da el turno al siguiente hilo en cola
-        pthread_cond_signal(&cond);
+        turn++;
         pthread_mutex_unlock(&mutex);
+        if (turn > base + queue_length) {
+            pthread_mutex_lock(&mutex);
+            turn = base + 1;
+            pthread_mutex_unlock(&mutex);
+        }
     }
     return nullptr;
-}
-
-/**
- * FIRST_COME_FIRST_SERVED
- *
- * Calendarizacion que atiende a cada hilo, uno por uno, hasta que se vacie la cola de hilos.
- * Cada hilo espera que termine el anterior.
- *
- * @param head Puntero a la primera posicion de la cola de hilos.
- * @author Eduardo Bolivar Minguet
- */
-void first_come_first_served(struct Node** head) {
-    while (head != nullptr && get_length(*head) > 0) {
-        pthread_create(&(*head)->process, NULL, thread_func, &(*head)->pid);
-        pthread_join((*head)->process, NULL);
-        remove_from_queue(head);
-    }
 }
 
 /**
@@ -93,18 +84,77 @@ void first_come_first_served(struct Node** head) {
  * @param head Puntero a la primera posicion de la cola de hilos
  * @author Eduardo Bolivar Minguet
  */
-void round_robin(struct Node** head, double quantum) {
+void round_robin(struct Node** head, int const offset, double quantum, int length) {
+    int flag = ((*head)->boat_position == 0) ? 0 : 1;
+    channel = length;
     root_quantum = quantum;
     queue_length = get_length(*head);
+    if (flag) {
+        turn = offset + 1;
+        base = offset;
+    } else {
+        turn = 1;
+        base = 0;
+    }
     struct Node* current = *head;
     while (current != nullptr) {
-        pthread_create(&current->process, NULL, thread_func_rr, &current->pid);
+        pthread_create(&current->process, nullptr, thread_func_rr, current);
         current = current->next;
     }
-    while (*head != nullptr && get_length(*head) > 0) {
-        pthread_join((*head)->process, NULL);
+    while (*head != nullptr) {
+        pthread_join((*head)->process, nullptr);
         remove_from_queue(head);
     }
+}
+
+void swapAttributes(struct Node* i, struct Node* j) {
+    char temp_boat_type[10];
+
+    const int temp_pid = i->pid;
+    i->pid = j->pid;
+    j->pid = temp_pid;
+
+    const int temp_priority = i->priority;
+    i->priority = j->priority;
+    j->priority = temp_priority;
+
+    const int temp_position = i->boat_position;
+    i->boat_position = j->boat_position;
+    j->boat_position = temp_position;
+
+    strcpy(temp_boat_type, i->boat_type);
+    strcpy(i->boat_type, j->boat_type);
+    strcpy(j->boat_type, temp_boat_type);
+
+    const double temp_burst = i->burst_time;
+    i->burst_time = j->burst_time;
+    j->burst_time = temp_burst;
+
+    const pthread_t temp_process = i->process;
+    i->process = j->process;
+    j->process = temp_process;
+}
+
+struct Node* sort_by_priority(struct Node* head) {
+    if (head == nullptr || head->next == nullptr) {
+        return head; // No se necesita ordenar si hay uno o ningún nodo
+    }
+    struct Node *i, *j;
+
+    for (i = head; i != nullptr; i = i->next) {
+        for (j = i->next; j != nullptr; j = j->next) {
+            if (i->priority > j->priority) {
+                // Intercambiar valores
+                swapAttributes(i, j);
+            }
+        }
+    }
+    return head;
+}
+
+void priority(struct Node** head, int length) {
+    *head = sort_by_priority(*head);
+    first_come_first_served(head, length);
 }
 
 /**
@@ -122,35 +172,17 @@ struct Node* sort_by_burst_time(struct Node* head) {
         return head; // No se necesita ordenar si hay uno o ningún nodo
     }
     struct Node *i, *j;
-    double temp_burst;
-    int temp_pid, temp_priority;
-    pthread_t temp_process;
 
     for (i = head; i != nullptr; i = i->next) {
         for (j = i->next; j != nullptr; j = j->next) {
             if (i->burst_time > j->burst_time) {
                 // Intercambiar valores
-                temp_burst = i->burst_time;
-                i->burst_time = j->burst_time;
-                j->burst_time = temp_burst;
-
-                temp_pid = i->pid;
-                i->pid = j->pid;
-                j->pid = temp_pid;
-
-                temp_priority = i->priority;
-                i->priority = j->priority;
-                j->priority = temp_priority;
-
-                temp_process = i->process;
-                i->process = j->process;
-                j->process = temp_process;
+                swapAttributes(i, j);
             }
         }
     }
     return head;
 }
-
 
 /**
  * SHORTEST_JOB_FIRST
@@ -162,18 +194,47 @@ struct Node* sort_by_burst_time(struct Node* head) {
  * @param head Puntero a la primera posición de la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void shortest_job_first(struct Node** head) {
-    pthread_mutex_lock(&mutex);  // Protege el acceso a la lista enlazada mientras se ordena
+void shortest_job_first(struct Node** head, int length) {
     *head = sort_by_burst_time(*head);
-    pthread_mutex_unlock(&mutex);  // Libera el mutex una vez que se ha ordenado
+    first_come_first_served(head, length);
+}
 
-    // Ejecutar los hilos en el orden de menor a mayor burst_time
+/**
+ * FIRST_COME_FIRST_SERVED
+ *
+ * Calendarizacion que atiende a cada hilo, uno por uno, hasta que se vacie la cola de hilos.
+ * Cada hilo espera que termine el anterior.
+ *
+ * @param head Puntero a la primera posicion de la cola de hilos.
+ * @author Eduardo Bolivar Minguet
+ */
+void first_come_first_served(struct Node** head, int  length) {
+    channel = length;
     while (*head != nullptr && get_length(*head) > 0) {
-        pthread_create(&(*head)->process, NULL, thread_func, &(*head)->pid);
-        pthread_join((*head)->process, NULL);
-
-        pthread_mutex_lock(&mutex);  // Protege la lista enlazada al eliminar el nodo
+        pthread_create(&(*head)->process, nullptr, thread_func, *head);
+        pthread_join((*head)->process, nullptr);
         remove_from_queue(head);
-        pthread_mutex_unlock(&mutex);  // Libera el mutex después de eliminar
     }
+}
+
+struct Node* sort_by_patrols(struct Node* head) {
+    if (head == nullptr || head->next == nullptr) {
+        return head; // No se necesita ordenar si hay uno o ningún nodo
+    }
+    struct Node *i, *j;
+
+    for (i = head; i != nullptr; i = i->next) {
+        for (j = i->next; j != nullptr; j = j->next) {
+            if (strcmp(j->boat_type, "Patrulla") == 0 && strcmp(i->boat_type, "Patrulla") != 0) {
+                // Intercambiar valores
+                swapAttributes(i, j);
+            }
+        }
+    }
+    return head;
+}
+
+void earliest_deadline_first(struct Node** head, int length) {
+    *head = sort_by_patrols(*head);
+    first_come_first_served(head, length);
 }
