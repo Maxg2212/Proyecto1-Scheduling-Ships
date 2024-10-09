@@ -87,8 +87,5 @@ void signboard(double const swap_time, struct Node** r_queue, struct Node** l_qu
  * @author Eduardo Bolivar Minguet
  */
 void tico(struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
-    while (r_queue != nullptr || l_queue != nullptr) {
-        //process_queue(r_queue);
-        //process_queue(l_queue);
-    }
+    process_queues(r_queue, l_queue, 0, 0, rr_quantum, scheduler, clength);
 }

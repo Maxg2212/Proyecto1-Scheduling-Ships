@@ -19,7 +19,8 @@ int totalPatrolBoats, tmp1, tmp2;
 struct Node* left_queue = nullptr;
 struct Node* right_queue = nullptr;
 
-int id = 1;
+int id_left = 1;
+int id_right = 1;
 
 // Function to get a random boat type
 const char* get_random_boat() {
@@ -33,11 +34,11 @@ void add_boat_by_key() {
     int side = (rand() % 2) + 1;
     switch (side) {
         case 1:
-            add_to_queue(&left_queue, id++, 4, 0, get_random_boat(), 0, thread);
+            add_to_queue(&left_queue, id_left++, 4, 0, get_random_boat(), 0, thread);
             left_queue->boat_position = 0;
             break;
         case 2:
-            add_to_queue(&right_queue, id++, 4, 0, get_random_boat(), channelLength, thread);
+            add_to_queue(&right_queue, id_right++, 4, 0, get_random_boat(), channelLength, thread);
             right_queue->boat_position = 100;
             break;
     }
@@ -49,24 +50,24 @@ void add_boat(const int side) {
     strcpy(b_type, get_random_boat());
     if (side == 0) {
         if (strcmp(b_type, "Normal") == 0 && normalBoatsLeft > 0) {
-            add_to_queue(&left_queue, id++, (double) channelLength / boatSpeed, normalPriority, b_type, 0, thread);
+            add_to_queue(&left_queue, id_left++, (double) channelLength / boatSpeed, normalPriority, b_type, 0, thread);
             normalBoatsLeft--;
         } else if (strcmp(b_type, "Pesquero") == 0 && fishingBoatsLeft > 0) {
-            add_to_queue(&left_queue, id++, (double) channelLength / (1.5 * boatSpeed), fishingPriority, b_type, 0, thread);
+            add_to_queue(&left_queue, id_left++, (double) channelLength / (1.5 * boatSpeed), fishingPriority, b_type, 0, thread);
             fishingBoatsLeft--;
         } else if (strcmp(b_type, "Patrulla") == 0 && patrolBoatsLeft > 0) {
-            add_to_queue(&left_queue, id++, (double) patrolDeadline / totalPatrolBoats, 0, b_type, 0, thread);
+            add_to_queue(&left_queue, id_left++, (double) patrolDeadline / totalPatrolBoats, 0, b_type, 0, thread);
             patrolBoatsLeft--;
         }
     } else {
         if (strcmp(b_type, "Normal") == 0 && normalBoatsRight > 0) {
-            add_to_queue(&right_queue, id++, (double) channelLength / boatSpeed, normalPriority, b_type, channelLength, thread);
+            add_to_queue(&right_queue, id_right++, (double) channelLength / boatSpeed, normalPriority, b_type, channelLength, thread);
             normalBoatsRight--;
         } else if (strcmp(b_type, "Pesquero") == 0 && fishingBoatsRight > 0) {
-            add_to_queue(&right_queue, id++, (double) channelLength / (1.5 * boatSpeed), fishingPriority, b_type, channelLength, thread);
+            add_to_queue(&right_queue, id_right++, (double) channelLength / (1.5 * boatSpeed), fishingPriority, b_type, channelLength, thread);
             fishingBoatsRight--;
         } else if (strcmp(b_type, "Patrulla") == 0 && patrolBoatsRight > 0) {
-            add_to_queue(&right_queue, id++, (double) patrolDeadline / totalPatrolBoats, 0, b_type, channelLength, thread);
+            add_to_queue(&right_queue, id_right++, (double) patrolDeadline / totalPatrolBoats, 0, b_type, channelLength, thread);
             patrolBoatsRight--;
         }
     }

@@ -3,15 +3,14 @@
 //
 
 #include "schedulers.h"
-#include <pthread.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 
 int channel = 0;
 
-void update_position(struct Node* node, int direction, double time) {
+void update_position(struct Node* node, int direction) {
     // Update the boat position based on direction
     if (direction > 0) {
         node->boat_position += channel / node->burst_time;
@@ -29,14 +28,14 @@ void update_position(struct Node* node, int direction, double time) {
  * @return puntero a nulo
  * @author Eduardo Bolivar Minguet
  */
-void* thread_func(void* arg) {
+int thread_func(void* arg) {
     struct Node* node = (struct Node*)arg;
     int const direction = (node->boat_position == 0) ? 1 : -1;
     while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
-        update_position(node, direction, 0);
+        update_position(node, direction);
     }
-    printf("Hilo: %d - Bote: %s - Cola: %s\n", node->pid, node->boat_type, (direction == -1) ? "Izquierda" : "Derecha");
-    return nullptr;
+    printf("Hilo: %d - Bote: %s - Cola: %s\n", node->pid, node->boat_type, (direction == 1) ? "Izquierda" : "Derecha");
+    return 0;
 }
 
 /**
@@ -52,16 +51,25 @@ void* thread_func(void* arg) {
  */
 int turn, base, currently_executing;
 double quantum1;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+CEthread_mutex_t* mutex;
 
-void* thread_func_rr(void* arg) {
+int thread_func_rr(void* arg) {
     struct Node* node = (struct Node*)arg;
     int const direction = (node->boat_position == 0) ? 1 : -1;
     while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
-        update_position(node, direction, 0);
+        CEmutex_trylock(mutex);
+        if (turn == node->pid) {
+            clock_t start = clock();
+            printf("Es el turno de: %d\n", turn);
+            while (quantum1 > (double) (clock() - start) / CLOCKS_PER_SEC) {
+                update_position(node, direction);
+            }
+            turn = (turn + 1) % currently_executing + base + 1;
+        }
+        CEmutex_unlock(mutex);
     }
-    printf("Hilo: %d - Bote: %s - Posicion: %f\n", node->pid, node->boat_type, node->boat_position);
-    return nullptr;
+    printf("Hilo: %d - Bote: %s - Cola: %s\n", node->pid, node->boat_type, (direction == 1) ? "Izquierda" : "Derecha");
+    return 0;
 }
 
 /**
@@ -73,21 +81,37 @@ void* thread_func_rr(void* arg) {
  * @param head Puntero a la primera posicion de la cola de hilos
  * @author Eduardo Bolivar Minguet
  */
-void round_robin(struct Node** head, int W, double const swapTime, double local_quantum, int length) {
+void round_robin(struct Node** head, int const W, double const swapTime, double local_quantum, int length) {
+    // Initiliaze mutex
+    CEmutex_init(&mutex, NULL);
     channel = length;
-    int const flag = (W == 0) ? 0 : 1;
-    while (flag && W > 0 && *head != nullptr) {
-        pthread_create(&(*head)->process, nullptr, thread_func, *head);
-        pthread_join((*head)->process, nullptr);
-        remove_from_queue(head);
-        W--;
+    turn = (*head)->pid;
+    base = turn - 1;
+    quantum1 = local_quantum;
+    currently_executing = get_length(*head) >= W ? W : get_length(*head);
+    int tmpW = W;
+    struct Node* current = *head; // Use a separate pointer to traverse the list
+
+    // First loop: create threads
+    while (tmpW > 0 && current != nullptr) {
+        CEthread_create(&current->process, nullptr, thread_func_rr, current);
+        current = current->next; // Move to the next node
+        tmpW--;
     }
-    clock_t letrero_start = clock();
-    while (!flag && swapTime > (double) (clock() - letrero_start) / CLOCKS_PER_SEC && *head != nullptr) {
-        pthread_create(&(*head)->process, nullptr, thread_func, *head);
-        pthread_join((*head)->process, nullptr);
-        remove_from_queue(head);
+
+    tmpW = W;
+    current = *head;
+
+    while (tmpW > 0 && current != nullptr) {
+        CEthread_join(current->process);
+        struct Node* next = current->next;
+        remove_from_queue(&current);
+        current = next;
+        tmpW--;
     }
+
+    *head = current;
+    CEmutex_destroy(mutex);
 }
 
 void swapAttributes(struct Node* i, struct Node* j) {
@@ -101,7 +125,7 @@ void swapAttributes(struct Node* i, struct Node* j) {
     i->priority = j->priority;
     j->priority = temp_priority;
 
-    const int temp_position = i->boat_position;
+    const double temp_position = i->boat_position;
     i->boat_position = j->boat_position;
     j->boat_position = temp_position;
 
@@ -113,7 +137,7 @@ void swapAttributes(struct Node* i, struct Node* j) {
     i->burst_time = j->burst_time;
     j->burst_time = temp_burst;
 
-    const pthread_t temp_process = i->process;
+    CEthread_t* temp_process = i->process;
     i->process = j->process;
     j->process = temp_process;
 }
