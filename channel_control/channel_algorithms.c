@@ -12,31 +12,45 @@
 #include "../scheduling/schedulers.h"
 
 /**
- * PROCESS_QUEUE
- *
- * Ejecuta un elemento de la cola de hilos
- *
- * @param queue La cola de hilos
+ * Llama al calendarizador configurado a ejecutar ambas colas de hilos.
+ * @param r_queue Cola derecha de hilos
+ * @param l_queue Cola izquierda de hilos
+ * @param W Parametro W de Equidad
+ * @param swapTime Tiempo de cambio del letrero
+ * @param rr_quantum Quantum configurado para Round Robin
+ * @param scheduler Nombre del calendarizador
+ * @param clength Largo del canal
  * @return La cola sin el elemento recien ejecutado.
  * @author Eduardo Bolivar Minguet
  */
 void process_queues(struct Node** r_queue, struct Node** l_queue, int W, double swapTime, double rr_quantum, char scheduler[10], int clength) {
+
+    // First Come First Served
     if (strcmp(scheduler, "FCFS") == 0) {
         while (*r_queue != nullptr || *l_queue != nullptr) {
             first_come_first_served(l_queue, W, swapTime, clength);
             first_come_first_served(r_queue, W, swapTime, clength);
         }
-    } else if (strcmp(scheduler, "RR") == 0) {
+    }
+
+    // Round Robin
+    else if (strcmp(scheduler, "RR") == 0) {
         while (*r_queue != nullptr || *l_queue != nullptr) {
             round_robin(l_queue, W, swapTime, rr_quantum, clength);
             round_robin(r_queue, W, swapTime, rr_quantum, clength);
         }
-    } else if (strcmp(scheduler, "SJF") == 0) {
+    }
+
+    // Shortest Job First
+    else if (strcmp(scheduler, "SJF") == 0) {
         while (*r_queue != nullptr || *l_queue != nullptr) {
             shortest_job_first(l_queue, W, swapTime, clength);
             shortest_job_first(r_queue, W, swapTime, clength);
         }
-    } else if (strcmp(scheduler, "Prioridad") == 0) {
+    }
+
+    // Priority
+    else if (strcmp(scheduler, "Prioridad") == 0) {
         while (*r_queue != nullptr || *l_queue != nullptr) {
             priority(l_queue, W, swapTime, clength);
             priority(r_queue, W, swapTime, clength);
@@ -48,44 +62,45 @@ void process_queues(struct Node** r_queue, struct Node** l_queue, int W, double 
 }
 
 /**
- * EQUITY
- *
- * Ejecuta las filas de barcos con el algoritmo Equidad.
- * Cambia de lado cuando pasan W barcos.
- *
- * @param W La cantidad de hilos que ejecutan por iteracion
+ * Procesa las colas con el algoritmo Equidad
+ * @param W La cantidad de barcos que pasan de cada lado.
  * @param r_queue Cola de barcos derecha
  * @param l_queue Cola de barcos izquierda
+ * @param scheduler Calendarizador escogido
+ * @param rr_quantum Quantum para Round Robin
+ * @param clength Largo del canal
  * @author Eduardo Bolivar Minguet
  */
 void equity(int const W, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
+    // Pasa un swapTime igual a 0 ya que este algoritmo no lo ocupa
     process_queues(r_queue, l_queue, W, 0, rr_quantum, scheduler, clength);
 }
 
 /**
- * SIGNBOARD
- *
- * Ejecuta las filas de barcos con el algoritmo Letrero.
- * Cambia de lado cuando que se llega al tiempo definido.
- *
+ * Procesa las colas con el algoritmo del Letrero.
  * @param swap_time El tiempo de cambio del letrero.
  * @param r_queue Cola de barcos derecha
  * @param l_queue Cola de barcos izquierda.
+ * @param scheduler Calendarizador escogido
+ * @param rr_quantum Quantum para Round Robin
+ * @param clength Largo del canal
  * @author Eduardo Bolivar Minguet
  */
 void signboard(double const swap_time, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
+    // Pasa un W igual a 0 ya que este no lo ocupa
     process_queues(r_queue, l_queue, 0, swap_time, rr_quantum, scheduler, clength);
 }
 
 /**
- * TICO
- *
- * No controla flujo, solo deja pasar barcos de ambos lados.
- *
+ * Procesa las colas sin control de flujo
  * @param r_queue Cola de barcos derecha.
  * @param l_queue COla de barcos izquierda.
+ * @param scheduler Calendarizador escogido
+ * @param rr_quantum Quantum para ROund Robin
+ * @param clength Largo del canal
  * @author Eduardo Bolivar Minguet
  */
 void tico(struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
+    // Pasa W y swapTime iguales a 0 ya que no controla el flujo.
     process_queues(r_queue, l_queue, 0, 0, rr_quantum, scheduler, clength);
 }

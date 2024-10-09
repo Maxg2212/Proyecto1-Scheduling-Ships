@@ -1,7 +1,7 @@
 Scheduler=RR
-Flow=Equidad
+Flow=Letrero
 W=3
-TimeSwap=0.0001
+TimeSwap=0.01
 ChannelLength=430
 BoatSpeed=40
 NormalBoatsRight=2
