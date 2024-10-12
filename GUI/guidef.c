@@ -1,11 +1,15 @@
 #include <SDL.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h> // Para rand() y srand()
+#include <time.h>   // Para time()
 #include "guidef.h"
 
 #define WINDOW_WIDTH 1800
 #define WINDOW_HEIGHT 600
 #define RECT_SPEED 5
+#define RECT_SPEED_PATROL 8
+#define RECT_SPEED_FISHER 6
 #define LEFT_LIMIT 1250
 #define RIGHT_LIMIT 450
 
@@ -15,6 +19,7 @@
 #define RIGHT_START_X 1250
 #define RIGHT_START_Y 370
 #define SPACING 100 // Espacio entre barcos
+#define MAX_BARCO 90 // Número máximo de barcos
 
 // Tipos de barcos
 typedef enum {
@@ -66,6 +71,9 @@ void drawBoat(SDL_Renderer *renderer, Barco barco) {
 void updateBoat(Barco *barco, int limit) {
     if (!barco->reached_limit) {
         barco->x += barco->direction * RECT_SPEED;
+        if (barco->tipo == PATRULLA) {
+            barco->x += barco->direction * RECT_SPEED_PATROL;
+        }
 
         // Si el barco ha alcanzado el límite, detener su movimiento
         if ((barco->direction == 1 && barco->x >= limit) ||
@@ -73,6 +81,26 @@ void updateBoat(Barco *barco, int limit) {
             barco->reached_limit = true;
         }
     }
+}
+
+// Función para crear un barco aleatorio
+Barco createRandomBoat(int is_left) {
+    BarcoTipo tipo = rand() % 3; // Tipo aleatorio (0, 1 o 2)
+    Barco barco;
+    barco.tipo = tipo;
+    barco.reached_limit = false;
+    barco.direction = (is_left) ? 1 : -1; // 1 para barcos de izquierda, -1 para barcos de derecha
+
+    // Establecer la posición inicial
+    if (is_left) {
+        barco.x = LEFT_START_X;
+        barco.y = LEFT_START_Y;
+    } else {
+        barco.x = RIGHT_START_X;
+        barco.y = RIGHT_START_Y;
+    }
+
+    return barco;
 }
 
 // Dibujar el canal en el centro de la pantalla
@@ -90,6 +118,7 @@ void drawCanal(SDL_Renderer *renderer) {
 
 void start_gui() {
     SDL_Init(SDL_INIT_VIDEO);
+    srand(time(NULL)); // Inicializa la semilla aleatoria
 
     SDL_Window *window = SDL_CreateWindow("Schedulers",
                                           SDL_WINDOWPOS_UNDEFINED,
@@ -99,20 +128,11 @@ void start_gui() {
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    // Lista de barcos que inician del lado izquierdo (coordenadas fijas en x e y)
-    Barco barcos_izquierda[3] = {
-        {NORMAL, LEFT_START_X, LEFT_START_Y, 1, false},      // Barco normal
-        {PESQUERA, LEFT_START_X - SPACING, LEFT_START_Y, 1, false},    // Barco pesquero
-        {PATRULLA, LEFT_START_X - 2 * SPACING, LEFT_START_Y, 1, false}     // Barco patrulla
-    };
-    int num_barcos_izquierda = 3;
-
-    // Lista de barcos que inician del lado derecho (coordenadas fijas en x e y)
-    Barco barcos_derecha[2] = {
-        {NORMAL, RIGHT_START_X, RIGHT_START_Y, -1, false},   // Barco normal
-        {NORMAL, RIGHT_START_X + SPACING, RIGHT_START_Y, -1, false}    // Barco normal
-    };
-    int num_barcos_derecha = 2;
+    // Listas de barcos (inicialmente vacías)
+    Barco barcos_izquierda[MAX_BARCO];
+    Barco barcos_derecha[MAX_BARCO];
+    int num_barcos_izquierda = 0;
+    int num_barcos_derecha = 0;
 
     bool running = true;
     SDL_Event event;
@@ -121,6 +141,19 @@ void start_gui() {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
+            }
+            // Chequeo de teclas
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_a) { // Tecla A
+                    //if (num_barcos_izquierda < MAX_BARCO) {
+                        barcos_izquierda[num_barcos_izquierda++] = createRandomBoat(1);
+                    //}
+                }
+                if (event.key.keysym.sym == SDLK_d) { // Tecla D
+                    //if (num_barcos_derecha < MAX_BARCO) {
+                        barcos_derecha[num_barcos_derecha++] = createRandomBoat(0);
+                    //}
+                }
             }
         }
 
