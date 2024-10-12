@@ -14,6 +14,7 @@
 #define LEFT_START_Y 230
 #define RIGHT_START_X 1250
 #define RIGHT_START_Y 370
+#define SPACING 100 // Espacio entre barcos
 
 // Tipos de barcos
 typedef enum {
@@ -27,6 +28,7 @@ typedef struct {
     BarcoTipo tipo;
     int x, y;   // Coordenadas
     int direction; // 1 para derecha, -1 para izquierda
+    bool reached_limit; // Bandera para marcar si ha llegado al límite
 } Barco;
 
 // Función para dibujar el barco según su tipo
@@ -60,13 +62,16 @@ void drawBoat(SDL_Renderer *renderer, Barco barco) {
     SDL_RenderDrawLines(renderer, points, 4);  // Dibuja el triángulo
 }
 
-// Función para actualizar la posición del barco actual
-void updateBoat(Barco *barco, int limit, bool *reached_limit) {
-    barco->x += barco->direction * RECT_SPEED;
+// Función para actualizar la posición del barco, si no ha alcanzado su límite
+void updateBoat(Barco *barco, int limit) {
+    if (!barco->reached_limit) {
+        barco->x += barco->direction * RECT_SPEED;
 
-    // Si el barco ha alcanzado su límite, marcarlo como alcanzado
-    if ((barco->direction == 1 && barco->x >= limit) || (barco->direction == -1 && barco->x <= limit)) {
-        *reached_limit = true;
+        // Si el barco ha alcanzado el límite, detener su movimiento
+        if ((barco->direction == 1 && barco->x >= limit) ||
+            (barco->direction == -1 && barco->x <= limit)) {
+            barco->reached_limit = true;
+        }
     }
 }
 
@@ -96,24 +101,18 @@ void start_gui() {
 
     // Lista de barcos que inician del lado izquierdo (coordenadas fijas en x e y)
     Barco barcos_izquierda[3] = {
-        {NORMAL, LEFT_START_X, LEFT_START_Y, 1},      // Barco normal
-        {PESQUERA, LEFT_START_X, LEFT_START_Y, 1},    // Barco pesquero
-        {PATRULLA, LEFT_START_X, LEFT_START_Y, 1}     // Barco patrulla
+        {NORMAL, LEFT_START_X, LEFT_START_Y, 1, false},      // Barco normal
+        {PESQUERA, LEFT_START_X - SPACING, LEFT_START_Y, 1, false},    // Barco pesquero
+        {PATRULLA, LEFT_START_X - 2 * SPACING, LEFT_START_Y, 1, false}     // Barco patrulla
     };
     int num_barcos_izquierda = 3;
-    int current_left_boat = 0; // Índice del barco que se está moviendo en la izquierda
 
     // Lista de barcos que inician del lado derecho (coordenadas fijas en x e y)
     Barco barcos_derecha[2] = {
-        {NORMAL, RIGHT_START_X, RIGHT_START_Y, -1},   // Barco normal
-        {NORMAL, RIGHT_START_X, RIGHT_START_Y, -1}    // Barco normal
+        {NORMAL, RIGHT_START_X, RIGHT_START_Y, -1, false},   // Barco normal
+        {NORMAL, RIGHT_START_X + SPACING, RIGHT_START_Y, -1, false}    // Barco normal
     };
     int num_barcos_derecha = 2;
-    int current_right_boat = 0; // Índice del barco que se está moviendo en la derecha
-
-    // Banderas para verificar si el barco ha alcanzado el límite
-    bool left_reached = false;
-    bool right_reached = false;
 
     bool running = true;
     SDL_Event event;
@@ -132,33 +131,19 @@ void start_gui() {
         // Dibujar el canal
         drawCanal(renderer);
 
-        // Mover el barco actual de la izquierda
-        if (current_left_boat < num_barcos_izquierda) {
-            if (!left_reached) {
-                updateBoat(&barcos_izquierda[current_left_boat], LEFT_LIMIT, &left_reached);
-            } else {
-                current_left_boat++; // Pasar al siguiente barco
-                left_reached = false; // Reiniciar bandera
-            }
-
-            // Dibujar el barco que está en movimiento
-            if (current_left_boat < num_barcos_izquierda) {
-                drawBoat(renderer, barcos_izquierda[current_left_boat]);
+        // Dibujar y mover todos los barcos de la izquierda que no han alcanzado el límite
+        for (int i = 0; i < num_barcos_izquierda; i++) {
+            updateBoat(&barcos_izquierda[i], LEFT_LIMIT); // Mover el barco si no ha alcanzado el límite
+            if (!barcos_izquierda[i].reached_limit) { // Solo dibujar si no ha alcanzado el límite
+                drawBoat(renderer, barcos_izquierda[i]); // Dibujar el barco
             }
         }
 
-        // Mover el barco actual de la derecha
-        if (current_right_boat < num_barcos_derecha) {
-            if (!right_reached) {
-                updateBoat(&barcos_derecha[current_right_boat], RIGHT_LIMIT, &right_reached);
-            } else {
-                current_right_boat++; // Pasar al siguiente barco
-                right_reached = false; // Reiniciar bandera
-            }
-
-            // Dibujar el barco que está en movimiento
-            if (current_right_boat < num_barcos_derecha) {
-                drawBoat(renderer, barcos_derecha[current_right_boat]);
+        // Dibujar y mover todos los barcos de la derecha que no han alcanzado el límite
+        for (int i = 0; i < num_barcos_derecha; i++) {
+            updateBoat(&barcos_derecha[i], RIGHT_LIMIT); // Mover el barco si no ha alcanzado el límite
+            if (!barcos_derecha[i].reached_limit) { // Solo dibujar si no ha alcanzado el límite
+                drawBoat(renderer, barcos_derecha[i]); // Dibujar el barco
             }
         }
 
