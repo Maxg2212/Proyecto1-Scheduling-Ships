@@ -244,8 +244,13 @@ void priority(struct Node** head, int const W, double const swapTime, int const 
 }
 
 /**
- * Ordena la cola de menor a mayor tiempo de duracion del hilo.
- * @param head Puntero a la cola.
+ * SORT_BY_BURST_TIME
+ *
+ * Ordena la lista enlazada basada en el tiempo de ráfaga (burst_time) usando el algoritmo de burbuja.
+ * Se agrega mutex para evitar condiciones de carrera al ordenar.
+ *
+ * @param head Puntero a la primera posición de la cola de hilos
+>>>>>>> GUI
  * @return Puntero a la lista enlazada ordenada
  * @author Max Garro Mora
  */
