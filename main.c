@@ -1,8 +1,11 @@
+#include <SDL.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "channel_control/channel_algorithms.h"
 #include "scheduling/linked_list.h"
 #include "scheduling/schedulers.h"
+#include "GUI/guidef.h"
 #include <string.h>
 #include <time.h>
 
