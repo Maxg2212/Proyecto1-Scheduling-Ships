@@ -18,6 +18,8 @@ add_executable(Proyecto1_Scheduling_Ships main.c
         channel_control/channel_algorithms.h
         channel_control/channel_algorithms.c
         channel_control/channel_settings.h
+        GUI/guidef.c
+        GUI/guidef.h
 )
 
 # Link SDL2 libraries
