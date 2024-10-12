@@ -2,39 +2,78 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define WINDOW_WIDTH 1000 // Aumentar el ancho de la ventana
-#define WINDOW_HEIGHT 800 // Aumentar la altura de la ventana
+#define WINDOW_WIDTH 1000
+#define WINDOW_HEIGHT 800
 #define RECT_SPEED 5
+#define LEFT_LIMIT 750
+#define RIGHT_LIMIT 50
 
-void drawBoat(SDL_Renderer *renderer, int x, int y, SDL_Color color) {
-    // Dibuja el casco del bote (rectángulo)
+// Tipos de barcos
+typedef enum {
+    NORMAL,
+    PESQUERA,
+    PATRULLA
+} BarcoTipo;
+
+// Estructura que representa un barco
+typedef struct {
+    BarcoTipo tipo;
+    int x, y;   // Coordenadas
+    int direction; // 1 para derecha, -1 para izquierda
+} Barco;
+
+// Función para dibujar el barco según su tipo
+void drawBoat(SDL_Renderer *renderer, Barco barco) {
+    SDL_Color color;
+    switch (barco.tipo) {
+        case NORMAL:
+            color = (SDL_Color){255, 0, 0}; // Rojo
+            break;
+        case PESQUERA:
+            color = (SDL_Color){0, 255, 0}; // Verde
+            break;
+        case PATRULLA:
+            color = (SDL_Color){255, 165, 0}; // Naranja
+            break;
+    }
+
+    // Dibuja el casco del barco
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
-    SDL_Rect boat_body = {x, y, 80, 30}; // Tamaño del bote
+    SDL_Rect boat_body = {barco.x, barco.y, 80, 30}; // Tamaño del barco
     SDL_RenderFillRect(renderer, &boat_body);
 
     // Dibuja la vela (triángulo)
     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Color amarillo
     SDL_Point points[4];
-    points[0] = (SDL_Point){x + 40, y - 30}; // Punta de la vela
-    points[1] = (SDL_Point){x + 80, y};       // Esquina inferior derecha
-    points[2] = (SDL_Point){x + 40, y};       // Esquina inferior izquierda
-    points[3] = points[0];                     // Cerrar el triángulo
+    points[0] = (SDL_Point){barco.x + 40, barco.y - 30}; // Punta de la vela
+    points[1] = (SDL_Point){barco.x + 80, barco.y};       // Esquina inferior derecha
+    points[2] = (SDL_Point){barco.x + 40, barco.y};       // Esquina inferior izquierda
+    points[3] = points[0];                                // Cerrar el triángulo
 
     SDL_RenderDrawLines(renderer, points, 4);  // Dibuja el triángulo
 }
 
+// Función para actualizar la posición del barco actual
+void updateBoat(Barco *barco, int limit, bool *reached_limit) {
+    barco->x += barco->direction * RECT_SPEED;
+
+    // Si el barco ha alcanzado su límite, marcarlo como alcanzado
+    if ((barco->direction == 1 && barco->x >= limit) || (barco->direction == -1 && barco->x <= limit)) {
+        *reached_limit = true;
+    }
+}
+
+// Dibujar el canal en el centro de la pantalla
 void drawCanal(SDL_Renderer *renderer) {
-    // Dibuja el agua del canal
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Color azul
-    SDL_Rect canal = {100, 300, 600, 200}; // Rectángulo del canal (manteniendo tamaño y posición)
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Azul
+    SDL_Rect canal = {200, 300, 600, 200};
     SDL_RenderFillRect(renderer, &canal);
 
-    // Dibuja los bordes del canal
-    SDL_SetRenderDrawColor(renderer, 139, 69, 19, 255); // Color marrón para los bordes
-    SDL_Rect left_border = {100, 300, 10, 200}; // Borde izquierdo
-    SDL_Rect right_border = {690, 300, 10, 200}; // Borde derecho
-    SDL_RenderFillRect(renderer, &left_border);
-    SDL_RenderFillRect(renderer, &right_border);
+    SDL_SetRenderDrawColor(renderer, 139, 69, 19, 255); // Marrón
+    SDL_Rect up_border = {200, 300, 600, 10}; // Borde arriba
+    SDL_Rect down_border = {200, 500, 600, 10}; // Borde abajo
+    SDL_RenderFillRect(renderer, &up_border);
+    SDL_RenderFillRect(renderer, &down_border);
 }
 
 int main(int argc, char *argv[]) {
@@ -48,12 +87,26 @@ int main(int argc, char *argv[]) {
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    // Posición y tamaño de los botes
-    int boat_red_x = 0;
-    int boat_red_y = (WINDOW_HEIGHT - 30) / 2; // Centrar verticalmente
+    // Lista de barcos que inician del lado izquierdo (coordenadas fijas en y)
+    Barco barcos_izquierda[3] = {
+        {NORMAL, 0, 100, 1},      // Barco normal
+        {PESQUERA, 0, 100, 1},    // Barco pesquero
+        {PATRULLA, 0, 100, 1}     // Barco patrulla
+    };
+    int num_barcos_izquierda = 3;
+    int current_left_boat = 0; // Índice del barco que se está moviendo en la izquierda
 
-    int boat_green_x = 300; // Posición inicial del bote verde
-    int boat_green_y = 100; // Posición vertical del bote verde
+    // Lista de barcos que inician del lado derecho (coordenadas fijas en y)
+    Barco barcos_derecha[2] = {
+        {NORMAL, 800, 100, -1},   // Barco normal
+        {NORMAL, 800, 100, -1}    // Barco normal
+    };
+    int num_barcos_derecha = 2;
+    int current_right_boat = 0; // Índice del barco que se está moviendo en la derecha
+
+    // Banderas para verificar si el barco ha alcanzado el límite
+    bool left_reached = false;
+    bool right_reached = false;
 
     bool running = true;
     SDL_Event event;
@@ -65,39 +118,47 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // Mover el bote rojo hacia la derecha
-        boat_red_x += RECT_SPEED;
-
-        // Reiniciar posición del bote rojo si alcanza x = 400
-        if (boat_red_x >= 400) {
-            boat_red_x = -80; // Reiniciar posición fuera de la pantalla
-        }
-
-        // Mover el bote verde hacia la izquierda
-        boat_green_x -= RECT_SPEED;
-
-        // Reiniciar posición del bote verde si alcanza x = 20
-        if (boat_green_x <= 20) {
-            boat_green_x = WINDOW_WIDTH; // Reiniciar posición fuera de la pantalla
-        }
-
         // Limpiar el renderer con color celeste
-        SDL_SetRenderDrawColor(renderer, 135, 206, 235, 255); // Color celeste (Sky Blue)
+        SDL_SetRenderDrawColor(renderer, 135, 206, 235, 255); // Celeste
         SDL_RenderClear(renderer);
 
         // Dibujar el canal
         drawCanal(renderer);
 
-        // Dibujar los botes
-        SDL_Color red_boat_color = {255, 0, 0}; // Color rojo
-        SDL_Color green_boat_color = {0, 255, 0}; // Color verde
-        drawBoat(renderer, boat_red_x, boat_red_y, red_boat_color);
-        drawBoat(renderer, boat_green_x, boat_green_y, green_boat_color);
+        // Mover el barco actual de la izquierda
+        if (current_left_boat < num_barcos_izquierda) {
+            if (!left_reached) {
+                updateBoat(&barcos_izquierda[current_left_boat], LEFT_LIMIT, &left_reached);
+            } else {
+                current_left_boat++; // Pasar al siguiente barco
+                left_reached = false; // Reiniciar bandera
+            }
+
+            // Dibujar el barco que está en movimiento
+            if (current_left_boat < num_barcos_izquierda) {
+                drawBoat(renderer, barcos_izquierda[current_left_boat]);
+            }
+        }
+
+        // Mover el barco actual de la derecha
+        if (current_right_boat < num_barcos_derecha) {
+            if (!right_reached) {
+                updateBoat(&barcos_derecha[current_right_boat], RIGHT_LIMIT, &right_reached);
+            } else {
+                current_right_boat++; // Pasar al siguiente barco
+                right_reached = false; // Reiniciar bandera
+            }
+
+            // Dibujar el barco que está en movimiento
+            if (current_right_boat < num_barcos_derecha) {
+                drawBoat(renderer, barcos_derecha[current_right_boat]);
+            }
+        }
 
         // Actualizar la pantalla
         SDL_RenderPresent(renderer);
 
-        // Esperar un corto tiempo para controlar la velocidad de movimiento
+        // Control de velocidad
         SDL_Delay(16); // Aproximadamente 60 FPS
     }
 
