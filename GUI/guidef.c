@@ -1,16 +1,19 @@
-//
-// Created by max-garro on 10/12/24.
-//
 #include <SDL.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include "guidef.h"
 
-#define WINDOW_WIDTH 1000
-#define WINDOW_HEIGHT 800
+#define WINDOW_WIDTH 1800
+#define WINDOW_HEIGHT 600
 #define RECT_SPEED 5
-#define LEFT_LIMIT 750
-#define RIGHT_LIMIT 50
+#define LEFT_LIMIT 1250
+#define RIGHT_LIMIT 450
+
+// Coordenadas fijas para los barcos
+#define LEFT_START_X 350
+#define LEFT_START_Y 230
+#define RIGHT_START_X 1250
+#define RIGHT_START_Y 370
 
 // Tipos de barcos
 typedef enum {
@@ -70,12 +73,12 @@ void updateBoat(Barco *barco, int limit, bool *reached_limit) {
 // Dibujar el canal en el centro de la pantalla
 void drawCanal(SDL_Renderer *renderer) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Azul
-    SDL_Rect canal = {200, 300, 600, 200};
+    SDL_Rect canal = {600, 200, 600, 200};
     SDL_RenderFillRect(renderer, &canal);
 
     SDL_SetRenderDrawColor(renderer, 139, 69, 19, 255); // Marrón
-    SDL_Rect up_border = {200, 300, 600, 10}; // Borde arriba
-    SDL_Rect down_border = {200, 500, 600, 10}; // Borde abajo
+    SDL_Rect up_border = {600, 200, 600, 10}; // Borde arriba
+    SDL_Rect down_border = {600, 400, 600, 10}; // Borde abajo
     SDL_RenderFillRect(renderer, &up_border);
     SDL_RenderFillRect(renderer, &down_border);
 }
@@ -83,7 +86,7 @@ void drawCanal(SDL_Renderer *renderer) {
 void start_gui() {
     SDL_Init(SDL_INIT_VIDEO);
 
-    SDL_Window *window = SDL_CreateWindow("Botes en Movimiento",
+    SDL_Window *window = SDL_CreateWindow("Schedulers",
                                           SDL_WINDOWPOS_UNDEFINED,
                                           SDL_WINDOWPOS_UNDEFINED,
                                           WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -91,19 +94,19 @@ void start_gui() {
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    // Lista de barcos que inician del lado izquierdo (coordenadas fijas en y)
+    // Lista de barcos que inician del lado izquierdo (coordenadas fijas en x e y)
     Barco barcos_izquierda[3] = {
-        {NORMAL, 0, 100, 1},      // Barco normal
-        {PESQUERA, 0, 100, 1},    // Barco pesquero
-        {PATRULLA, 0, 100, 1}     // Barco patrulla
+        {NORMAL, LEFT_START_X, LEFT_START_Y, 1},      // Barco normal
+        {PESQUERA, LEFT_START_X, LEFT_START_Y, 1},    // Barco pesquero
+        {PATRULLA, LEFT_START_X, LEFT_START_Y, 1}     // Barco patrulla
     };
     int num_barcos_izquierda = 3;
     int current_left_boat = 0; // Índice del barco que se está moviendo en la izquierda
 
-    // Lista de barcos que inician del lado derecho (coordenadas fijas en y)
+    // Lista de barcos que inician del lado derecho (coordenadas fijas en x e y)
     Barco barcos_derecha[2] = {
-        {NORMAL, 800, 100, -1},   // Barco normal
-        {NORMAL, 800, 100, -1}    // Barco normal
+        {NORMAL, RIGHT_START_X, RIGHT_START_Y, -1},   // Barco normal
+        {NORMAL, RIGHT_START_X, RIGHT_START_Y, -1}    // Barco normal
     };
     int num_barcos_derecha = 2;
     int current_right_boat = 0; // Índice del barco que se está moviendo en la derecha

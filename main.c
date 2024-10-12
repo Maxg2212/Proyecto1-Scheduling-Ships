@@ -166,6 +166,7 @@ void read_config() {
  * @return estado de ejecucion
  */
 int main() {
+    start_gui();
     srand(time(nullptr));
 
     // Lee el archivo de configuracion
@@ -220,5 +221,6 @@ int main() {
         perror("Unexpected Flow Algorithm");
         return 1;
     }
+
     return 0;
 }
