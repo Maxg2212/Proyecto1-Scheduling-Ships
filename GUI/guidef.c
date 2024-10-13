@@ -25,7 +25,7 @@ SDL_Window *window = nullptr;
 SDL_Renderer *renderer = nullptr;
 
 // Función para dibujar el barco según su tipo
-void drawBoat(struct Node* boat) {
+void drawBoat(struct Node* boat, int direction) {
     SDL_Color color;
     if (strcmp(boat->boat_type, "Normal") == 0) {
         color = (SDL_Color){255, 0, 0}; // Rojo
@@ -44,7 +44,7 @@ void drawBoat(struct Node* boat) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Color amarillo
     SDL_Point points[4];
     points[0] = (SDL_Point){boat->x + 40, boat->y - 30}; // Punta de la vela
-    points[1] = (SDL_Point){boat->x + 80, boat->y};       // Esquina inferior derecha
+    points[1] = (SDL_Point){boat->x + ((direction) ? 0 : 80), boat->y};       // Esquina inferior derecha
     points[2] = (SDL_Point){boat->x + 40, boat->y};       // Esquina inferior izquierda
     points[3] = points[0];                                // Cerrar el triángulo
 
@@ -67,78 +67,12 @@ void drawBoat(struct Node* boat) {
     //}
 //}
 
-// Dibujar el canal en el centro de la pantalla
-void drawCanal(SDL_Renderer *renderer) {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Azul
-    SDL_Rect canal = {600, 200, 600, 200};
-    SDL_RenderFillRect(renderer, &canal);
-
-    SDL_SetRenderDrawColor(renderer, 139, 69, 19, 255); // Marrón
-    SDL_Rect up_border = {600, 200, 600, 10}; // Borde arriba
-    SDL_Rect down_border = {600, 400, 600, 10}; // Borde abajo
-    SDL_RenderFillRect(renderer, &up_border);
-    SDL_RenderFillRect(renderer, &down_border);
-}
-
 void init_gui() {
     SDL_Init(SDL_INIT_VIDEO);
 
     window = SDL_CreateWindow("Scheduling Ships",SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-    int running = 1;
-    SDL_Event event;
-
-    while (running) {
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                running = 0;
-            }
-            // Chequeo de teclas
-            if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_a) { // Tecla A
-                    //if (num_barcos_izquierda < MAX_BARCO) {
-                        printf("Tecla A"); //barcos_izquierda[num_barcos_izquierda++] = createRandomBoat(1);
-                    //}
-                }
-                if (event.key.keysym.sym == SDLK_d) { // Tecla D
-                    //if (num_barcos_derecha < MAX_BARCO) {
-                        printf("Tecla D"); //barcos_derecha[num_barcos_derecha++] = createRandomBoat(0);
-                    //}
-                }
-            }
-        }
-
-        // Limpiar el renderer con color celeste
-        SDL_SetRenderDrawColor(renderer, 135, 206, 235, 255); // Celeste
-        SDL_RenderClear(renderer);
-
-        // Dibujar el canal
-        drawCanal(renderer);
-
-        // Dibujar y mover todos los barcos de la izquierda que no han alcanzado el límite
-        //for (int i = 0; i < num_barcos_izquierda; i++) {
-            //updateBoat(&barcos_izquierda[i], LEFT_LIMIT); // Mover el barco si no ha alcanzado el límite
-            //if (!barcos_izquierda[i].reached_limit) { // Solo dibujar si no ha alcanzado el límite
-                //drawBoat(renderer, barcos_izquierda[i]); // Dibujar el barco
-            //}
-        //}
-
-        // Dibujar y mover todos los barcos de la derecha que no han alcanzado el límite
-        //for (int i = 0; i < num_barcos_derecha; i++) {
-            //updateBoat(&barcos_derecha[i], RIGHT_LIMIT); // Mover el barco si no ha alcanzado el límite
-            //if (!barcos_derecha[i].reached_limit) { // Solo dibujar si no ha alcanzado el límite
-                //drawBoat(renderer, barcos_derecha[i]); // Dibujar el barco
-            //}
-        //}
-
-        // Actualizar la pantalla
-        SDL_RenderPresent(renderer);
-
-        // Control de velocidad
-        SDL_Delay(16); // Aproximadamente 60 FPS
-    }
 }
 
 void destroy_gui() {
@@ -154,22 +88,23 @@ void render_gui(struct Node* left_queue, struct Node* right_queue, int channel_l
     SDL_SetRenderDrawColor(renderer, 135, 206, 235, 255); // Celeste
     SDL_RenderClear(renderer);
 
+    // Dibujar el canal
     SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Azul
-    SDL_Rect canal = {600, 200, 600, 200};
+    SDL_Rect canal = {900 - channel_length / 2, 200, channel_length, 200};
     SDL_RenderFillRect(renderer, &canal);
 
     SDL_SetRenderDrawColor(renderer, 139, 69, 19, 255); // Marrón
-    SDL_Rect up_border = {600, 200, 600, 10}; // Borde arriba
-    SDL_Rect down_border = {600, 400, 600, 10}; // Borde abajo
+    SDL_Rect up_border = {900 - channel_length / 2, 200, channel_length, 10}; // Borde arriba
+    SDL_Rect down_border = {900 - channel_length / 2, 400, channel_length, 10}; // Borde abajo
     SDL_RenderFillRect(renderer, &up_border);
     SDL_RenderFillRect(renderer, &down_border);
 
     for (struct Node* currentBoat = left_queue; currentBoat != nullptr; currentBoat = currentBoat->next) {
-        drawBoat(currentBoat);
+        drawBoat(currentBoat, 0);
     }
 
     for (struct Node* currentBoat = right_queue; currentBoat != nullptr; currentBoat = currentBoat->next) {
-        drawBoat(currentBoat);;
+        drawBoat(currentBoat, 1);
     }
 
     // Actualizar la pantalla
