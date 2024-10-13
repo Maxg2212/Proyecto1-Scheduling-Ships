@@ -15,9 +15,10 @@ struct Node {
     CEthread_t* t;
     int channel;
     struct Node* next;
+    struct Node* prev;
 };
 
-struct Node* create_node(int pid, int priority, char* boat_type, int speed, int x, int y, CEthread_t* t, int channel);
+struct Node* create_node(int pid, int priority, char* boat_type, int speed, int x, int y, CEthread_t* t, int channel, struct Node* prev_ptr);
 void add_to_queue(struct Node** queue_ref, int pid, int priority, char* boat_type, int speed, int x, int y, CEthread_t* t, int channel);
 void remove_from_queue(struct Node** queue_ref);
 int get_length(const struct Node* queue_ref);
