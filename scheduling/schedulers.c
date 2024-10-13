@@ -6,20 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <pthread.h>
-
-// Variable global para conocer el largo del canal
-int channel = 0;
-
-/**
- * Funcion que mueve los barcos modificando su posicion.
- * @param node Nodo que contiene la informacion del barco.
- * @param direction Indica si va de izquierda a derecha o de derecha a izquierda.
- * @author Eduardo Bolivar Minguet
- */
-void update_position(struct Node* node, int direction) {
-
-}
+#include <SDL2/SDL.h>
 
 /**
  * Funcion que ejecuta hilos uno tras otro. Para los algoritmos FCFS, Prioridad, SJF y EDF.
@@ -27,8 +14,27 @@ void update_position(struct Node* node, int direction) {
  * @return Estado de ejecucion
  * @author Eduardo Bolivar Minguet
  */
-int thread_func(void* arg) {
-
+void move_boat(void* arg) {
+    struct Node* PCB = arg;
+    int direction = (PCB->x < 900) ? 1 : -1;
+    while (direction == 1 && PCB->x < 900 + PCB->channel / 2) {
+        if (820 - PCB->channel / 2 < PCB->x && PCB->x < 900 + PCB->channel / 2) {
+            PCB->y = 295;
+        } else {
+            PCB->y = 230;
+        }
+        PCB->x += direction * PCB->speed;
+        SDL_Delay(16);
+    }
+    while (direction == -1 && PCB->x > 820 - PCB->channel / 2) {
+        if (820 - PCB->channel / 2 < PCB->x && PCB->x < 900 + PCB->channel / 2) {
+            PCB->y = 295;
+        } else {
+            PCB->y = 370;
+        }
+        PCB->x += direction * PCB->speed;
+        SDL_Delay(16);
+    }
 }
 
 // Variables compartidas para la ejecucion de Round Robin
@@ -58,12 +64,11 @@ int thread_func_rr(void* arg) {
  * @param length Es el largo del canal
  * @author Eduardo Bolivar Minguet
  */
-void round_robin(struct Node** head, int const W, double const swapTime, double local_quantum, int length) {
+void round_robin(struct Node** head, int const W, double const swapTime, double local_quantum) {
     // Initiliaze mutex
     CEmutex_init(&mutex, NULL);
 
     // Initialize RR required information
-    channel = length;
     turn = (*head)->pid;
     base = turn - 1;
     quantum1 = local_quantum;
@@ -158,9 +163,9 @@ void swapAttributes(struct Node* i, struct Node* j) {
     strcpy(i->boat_type, j->boat_type);
     strcpy(j->boat_type, temp_boat_type);
 
-    const double temp_burst = i->burst_time;
-    i->burst_time = j->burst_time;
-    j->burst_time = temp_burst;
+    const int temp_speed = i->speed;
+    i->speed = j->speed;
+    j->speed = temp_speed;
 }
 
 /**
@@ -194,12 +199,12 @@ struct Node* sort_by_priority(struct Node* head) {
  * @param length Largo del canal
  * @author Eduardo Bolivar Minguet
  */
-void priority(struct Node** head, int const W, double const swapTime, int const length) {
+void priority(struct Node** head, int const W, double const swapTime) {
     // Ordena la cola por prioridad
     *head = sort_by_priority(*head);
 
     // Ejecuta un FCFS de la cola ordenada.
-    first_come_first_served(head, W, swapTime, length);
+    first_come_first_served(head, W, swapTime);
 }
 
 /**
@@ -221,7 +226,7 @@ struct Node* sort_by_burst_time(struct Node* head) {
 
     for (i = head; i != nullptr; i = i->next) {
         for (j = i->next; j != nullptr; j = j->next) {
-            if (i->burst_time > j->burst_time) {
+            if (i->speed < j->speed) {
                 // Intercambiar valores
                 swapAttributes(i, j);
             }
@@ -235,13 +240,13 @@ struct Node* sort_by_burst_time(struct Node* head) {
  * @param head Puntero a la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void shortest_job_first(struct Node** head, int const W, double const swapTime, int const length) {
+void shortest_job_first(struct Node** head, int const W, double const swapTime) {
 
     // Ordena la cola por duracion de hilo
     *head = sort_by_burst_time(*head);
 
     // Ejecuta un FCFS a la cola ordenada
-    first_come_first_served(head, W, swapTime, length);
+    first_come_first_served(head, W, swapTime);
 }
 
 /**
@@ -249,13 +254,15 @@ void shortest_job_first(struct Node** head, int const W, double const swapTime, 
  * @param head Puntero a la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void first_come_first_served(struct Node** head, int W, double swapTime, int const length) {
-    channel = length;
-
+void first_come_first_served(struct Node** head, int W, double swapTime) {
     // Ejecuta W hilos para algoritmo Equidad
     if (W != 0) {
-        while (W > 0 && *head != nullptr) {
-            CEthread_create(&(*head)->t, nullptr, thread_func, *head);
+        int tmpW = W;
+        for (struct Node* current = *head; tmpW > 0 && current != nullptr; current = current->next) {
+            CEthread_create(&current->t, nullptr, move_boat, current);
+            tmpW--;
+        }
+        while (W > tmpW) {
             CEthread_join((*head)->t);
             remove_from_queue(head);
             W--;
@@ -265,7 +272,7 @@ void first_come_first_served(struct Node** head, int W, double swapTime, int con
     else if (swapTime != 0) {
         clock_t letrero_start = clock();
         while (swapTime > (double) (clock() - letrero_start) / CLOCKS_PER_SEC && *head != nullptr) {
-            CEthread_create(&(*head)->t, nullptr, thread_func, *head);
+            CEthread_create(&(*head)->t, nullptr, move_boat, *head);
             CEthread_join((*head)->t);
             remove_from_queue(head);
         }
@@ -305,10 +312,10 @@ struct Node* sort_by_patrols(struct Node* head) {
  * @param numOfPatrols Cantidad de patrullas que debe dejar pasar.
  * @param length Largo del canal
  */
-void earliest_deadline_first(struct Node** head, int const numOfPatrols, int const length) {
+void earliest_deadline_first(struct Node** head, int const numOfPatrols) {
     // Ordena patrullas primero
     *head = sort_by_patrols(*head);
 
     // Aplica un FCFS
-    first_come_first_served(head, numOfPatrols, 0, length);
+    first_come_first_served(head, numOfPatrols, 0);
 }

@@ -25,6 +25,8 @@ struct Node* right_queue = nullptr;
 int id_left = 1;
 int id_right = 1;
 
+int running_global = 0;
+
 // --------------------------------------------------------------------------------
 
 /**
@@ -36,6 +38,39 @@ const char* get_random_boat() {
     const char* boat_types[3] = {"Normal", "Pesquero", "Patrulla"};
     int random_index = rand() % 3;
     return boat_types[random_index];
+}
+
+void add_boat_by_key(int queue) {
+    char boat[10];
+    strcpy(boat, get_random_boat());
+    CEthread_t* thread = nullptr;
+    int x_init;
+    if (queue == 1) {
+        x_init = 900 - channelLength / 2 - (get_length(left_queue) + 1) * 100;
+        if (strcmp(boat, "Normal") == 0) {
+            add_to_queue(&left_queue, id_left++, normalPriority, boat, boatSpeed, x_init, 230, thread, channelLength);
+        } else if (strcmp(boat, "Pesquero") == 0) {
+            add_to_queue(&left_queue, id_left++, fishingPriority, boat, 2 * boatSpeed, x_init, 230, thread, channelLength);
+        } else if (strcmp(boat, "Patrulla") == 0) {
+            // La velocidad asignada a la patrulla depende de su deadline y de la cantidad de patrullas.
+            // Esto para lograr que todas las patrullas pasen antes de que se cumpla el deadline
+            add_to_queue(&left_queue, id_left++, 0, boat, patrolDeadline, x_init, 230, thread, channelLength);
+            patrolBoatsLeft++;
+        }
+    } else if (queue == 2) {
+        x_init = 900 + channelLength / 2 + 20 + get_length(right_queue) * 100;
+
+        if (strcmp(boat, "Normal") == 0) {
+            add_to_queue(&right_queue, id_right++, normalPriority, boat, boatSpeed, x_init, 370, thread, channelLength);
+        } else if (strcmp(boat, "Pesquero") == 0) {
+            add_to_queue(&right_queue, id_right++, fishingPriority, boat, 2 * boatSpeed, x_init, 370, thread, channelLength);
+        } else if (strcmp(boat, "Patrulla") == 0) {
+            // La velocidad asignada a la patrulla depende de su deadline y de la cantidad de patrullas.
+            // Esto para lograr que todas las patrullas pasen antes de que se cumpla el deadline
+            add_to_queue(&right_queue, id_right++, 0, boat, patrolDeadline, x_init, 370, thread, channelLength);
+            patrolBoatsRight++;
+        }
+    }
 }
 
 /**
@@ -55,15 +90,15 @@ void add_boat(const int side) {
         x_init = 900 - channelLength / 2 - (get_length(left_queue) + 1) * 100;
 
         if (strcmp(b_type, "Normal") == 0 && normalBoatsLeft > 0) {
-            add_to_queue(&left_queue, id_left++, normalPriority, b_type, (double) channelLength / boatSpeed, x_init, 230, thread);
+            add_to_queue(&left_queue, id_left++, normalPriority, b_type, boatSpeed, x_init, 230, thread, channelLength);
             normalBoatsLeft--;
         } else if (strcmp(b_type, "Pesquero") == 0 && fishingBoatsLeft > 0) {
-            add_to_queue(&left_queue, id_left++, fishingPriority, b_type, (double) channelLength / (1.5 * boatSpeed), x_init, 230, thread);
+            add_to_queue(&left_queue, id_left++, fishingPriority, b_type, 2 * boatSpeed, x_init, 230, thread, channelLength);
             fishingBoatsLeft--;
         } else if (strcmp(b_type, "Patrulla") == 0 && patrolBoatsLeft > 0) {
             // La velocidad asignada a la patrulla depende de su deadline y de la cantidad de patrullas.
             // Esto para lograr que todas las patrullas pasen antes de que se cumpla el deadline
-            add_to_queue(&left_queue, id_left++, 0, b_type, (double) patrolDeadline / totalPatrolBoats, x_init, 230, thread);
+            add_to_queue(&left_queue, id_left++, 0, b_type, patrolDeadline, x_init, 230, thread, channelLength);
             patrolBoatsLeft--;
         }
     } else {
@@ -71,15 +106,15 @@ void add_boat(const int side) {
         x_init = 900 + channelLength / 2 + 20 + get_length(right_queue) * 100;
 
         if (strcmp(b_type, "Normal") == 0 && normalBoatsRight > 0) {
-            add_to_queue(&right_queue, id_right++, normalPriority, b_type, (double) channelLength / boatSpeed, x_init, 370, thread);
+            add_to_queue(&right_queue, id_right++, normalPriority, b_type, boatSpeed, x_init, 370, thread, channelLength);
             normalBoatsRight--;
         } else if (strcmp(b_type, "Pesquero") == 0 && fishingBoatsRight > 0) {
-            add_to_queue(&right_queue, id_right++, fishingPriority, b_type, (double) channelLength / (1.5 * boatSpeed), x_init, 370, thread);
+            add_to_queue(&right_queue, id_right++, fishingPriority, b_type, 2 * boatSpeed, x_init, 370, thread, channelLength);
             fishingBoatsRight--;
         } else if (strcmp(b_type, "Patrulla") == 0 && patrolBoatsRight > 0) {
             // La velocidad asignada a la patrulla depende de su deadline y de la cantidad de patrullas.
             // Esto para lograr que todas las patrullas pasen antes de que se cumpla el deadline
-            add_to_queue(&right_queue, id_right++, 0, b_type, (double) patrolDeadline / totalPatrolBoats, x_init, 370, thread);
+            add_to_queue(&right_queue, id_right++, 0, b_type, patrolDeadline, x_init, 370, thread, channelLength);
             patrolBoatsRight--;
         }
     }
@@ -153,11 +188,28 @@ void read_config() {
 void* gui_thread(void* arg) {
     init_gui();
     int running = 1;
+    uint32_t event_data[2];
+
     while (running) {
-        if (get_event() == SDL_QUIT) {
+        get_event(event_data);
+
+        if (event_data[0] == SDL_QUIT) {
             running = 0;
+            running_global = 0;
+
+            // Thread end de todos los barcos
+
         }
-        render_gui(left_queue, right_queue, channelLength);
+
+        if (event_data[0] == SDL_KEYDOWN) {
+            if (event_data[1] == SDLK_a) {
+                add_boat_by_key(1);
+            } else if (event_data[1] == SDLK_d) {
+                add_boat_by_key(2);
+            }
+        }
+
+        render_gui(&left_queue, &right_queue, channelLength);
         SDL_Delay(16);
     }
     destroy_gui();
@@ -200,7 +252,34 @@ int main() {
         add_boat(1);
     }
 
+    running_global = 1;
+
     CEthread_create(&main_gui, nullptr, gui_thread, nullptr);
+
+    patrolBoatsLeft = tmp1;
+    patrolBoatsRight = tmp2;
+
+    while (running_global) {
+
+        totalPatrolBoats = patrolBoatsLeft + patrolBoatsRight;
+
+        if (totalPatrolBoats > 0) {
+            earliest_deadline_first(&left_queue, patrolBoatsLeft);
+            earliest_deadline_first(&right_queue, patrolBoatsRight);
+
+            patrolBoatsLeft = 0;
+            patrolBoatsRight = 0;
+        }
+
+        if (strcmp(flow, "Equidad") == 0) {
+            equity(w, &right_queue, &left_queue, scheduler, quantum);
+        } else if (strcmp(flow, "Letrero") == 0) {
+            signboard(timeSwap, &right_queue, &left_queue, scheduler, quantum);
+        } else if (strcmp(flow, "Tico") == 0) {
+            tico(&right_queue, &left_queue, scheduler, quantum);
+        }
+    }
+
     CEthread_join(main_gui);
 
     return 0;

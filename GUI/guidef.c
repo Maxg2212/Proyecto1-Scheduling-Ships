@@ -83,27 +83,36 @@ void destroy_gui() {
     SDL_Quit();
 }
 
-void render_gui(struct Node* left_queue, struct Node* right_queue, int channel_length) {
+void render_gui(struct Node** left_queue, struct Node** right_queue, int channel_length) {
     // Limpiar el renderer con color celeste
     SDL_SetRenderDrawColor(renderer, 135, 206, 235, 255); // Celeste
     SDL_RenderClear(renderer);
 
     // Dibujar el canal
     SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Azul
-    SDL_Rect canal = {900 - channel_length / 2, 200, channel_length, 200};
+    SDL_Rect canal = {900 - channel_length / 2, 260, channel_length, 80};
     SDL_RenderFillRect(renderer, &canal);
 
     SDL_SetRenderDrawColor(renderer, 139, 69, 19, 255); // Marrón
-    SDL_Rect up_border = {900 - channel_length / 2, 200, channel_length, 10}; // Borde arriba
-    SDL_Rect down_border = {900 - channel_length / 2, 400, channel_length, 10}; // Borde abajo
+    SDL_Rect up_border = {900 - channel_length / 2, 260, channel_length, 10}; // Borde arriba
+    SDL_Rect down_border = {900 - channel_length / 2, 340, channel_length, 10}; // Borde
+    SDL_Rect wall1 = {900 - channel_length / 2, 0, 10, 260};
+    SDL_Rect wall2 = {890 + channel_length / 2, 0, 10, 260};
+    SDL_Rect wall3 = {900 - channel_length / 2, 340, 10, 260};
+    SDL_Rect wall4 = {890 + channel_length / 2, 340, 10, 260};
+
     SDL_RenderFillRect(renderer, &up_border);
     SDL_RenderFillRect(renderer, &down_border);
+    SDL_RenderFillRect(renderer, &wall1);
+    SDL_RenderFillRect(renderer, &wall2);
+    SDL_RenderFillRect(renderer, &wall3);
+    SDL_RenderFillRect(renderer, &wall4);
 
-    for (struct Node* currentBoat = left_queue; currentBoat != nullptr; currentBoat = currentBoat->next) {
+    for (struct Node* currentBoat = *left_queue; currentBoat != nullptr; currentBoat = currentBoat->next) {
         drawBoat(currentBoat, 0);
     }
 
-    for (struct Node* currentBoat = right_queue; currentBoat != nullptr; currentBoat = currentBoat->next) {
+    for (struct Node* currentBoat = *right_queue; currentBoat != nullptr; currentBoat = currentBoat->next) {
         drawBoat(currentBoat, 1);
     }
 
@@ -111,11 +120,22 @@ void render_gui(struct Node* left_queue, struct Node* right_queue, int channel_l
     SDL_RenderPresent(renderer);
 }
 
-uint32_t get_event() {
+void get_event(uint32_t* event_pair) {
     SDL_Event event;
-    uint32_t type = 0;
+    event_pair[0] = 0;  // Default to no event
+    event_pair[1] = 0;  // Default to no key pressed
+
+    // Loop to check for events
     while (SDL_PollEvent(&event)) {
-        type = event.type;
+        if (event.type == SDL_KEYDOWN || event.type == SDL_QUIT) {
+            event_pair[0] = event.type;
+            if (event.type == SDL_KEYDOWN) {
+                event_pair[1] = event.key.keysym.sym;
+            }
+            return;  // Return on first relevant event
+        }
     }
-    return type;
 }
+
+
+

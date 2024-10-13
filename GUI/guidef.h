@@ -9,7 +9,7 @@
 
 void init_gui();
 void destroy_gui();
-void render_gui(struct Node* left_queue, struct Node* right_queue, int channel_length);
-uint32_t get_event();
+void render_gui(struct Node** left_queue, struct Node** right_queue, int channel_length);
+void get_event(uint32_t* event_pair);
 
 #endif //GUIDEF_H

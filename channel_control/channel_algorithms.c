@@ -23,37 +23,37 @@
  * @return La cola sin el elemento recien ejecutado.
  * @author Eduardo Bolivar Minguet
  */
-void process_queues(struct Node** r_queue, struct Node** l_queue, int W, double swapTime, double rr_quantum, char scheduler[10], int clength) {
+void process_queues(struct Node** r_queue, struct Node** l_queue, int W, double swapTime, double rr_quantum, char scheduler[10]) {
 
     // First Come First Served
     if (strcmp(scheduler, "FCFS") == 0) {
         while (*r_queue != nullptr || *l_queue != nullptr) {
-            first_come_first_served(l_queue, W, swapTime, clength);
-            first_come_first_served(r_queue, W, swapTime, clength);
+            first_come_first_served(l_queue, W, swapTime);
+            first_come_first_served(r_queue, W, swapTime);
         }
     }
 
     // Round Robin
     else if (strcmp(scheduler, "RR") == 0) {
         while (*r_queue != nullptr || *l_queue != nullptr) {
-            round_robin(l_queue, W, swapTime, rr_quantum, clength);
-            round_robin(r_queue, W, swapTime, rr_quantum, clength);
+            round_robin(l_queue, W, swapTime, rr_quantum);
+            round_robin(r_queue, W, swapTime, rr_quantum);
         }
     }
 
     // Shortest Job First
     else if (strcmp(scheduler, "SJF") == 0) {
         while (*r_queue != nullptr || *l_queue != nullptr) {
-            shortest_job_first(l_queue, W, swapTime, clength);
-            shortest_job_first(r_queue, W, swapTime, clength);
+            shortest_job_first(l_queue, W, swapTime);
+            shortest_job_first(r_queue, W, swapTime);
         }
     }
 
     // Priority
     else if (strcmp(scheduler, "Prioridad") == 0) {
         while (*r_queue != nullptr || *l_queue != nullptr) {
-            priority(l_queue, W, swapTime, clength);
-            priority(r_queue, W, swapTime, clength);
+            priority(l_queue, W, swapTime);
+            priority(r_queue, W, swapTime);
         }
     } else {
         perror("Unknown scheduler");
@@ -71,9 +71,9 @@ void process_queues(struct Node** r_queue, struct Node** l_queue, int W, double 
  * @param clength Largo del canal
  * @author Eduardo Bolivar Minguet
  */
-void equity(int const W, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
+void equity(int const W, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum) {
     // Pasa un swapTime igual a 0 ya que este algoritmo no lo ocupa
-    process_queues(r_queue, l_queue, W, 0, rr_quantum, scheduler, clength);
+    process_queues(r_queue, l_queue, W, 0, rr_quantum, scheduler);
 }
 
 /**
@@ -86,9 +86,9 @@ void equity(int const W, struct Node** r_queue, struct Node** l_queue, char sche
  * @param clength Largo del canal
  * @author Eduardo Bolivar Minguet
  */
-void signboard(double const swap_time, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
+void signboard(double const swap_time, struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum) {
     // Pasa un W igual a 0 ya que este no lo ocupa
-    process_queues(r_queue, l_queue, 0, swap_time, rr_quantum, scheduler, clength);
+    process_queues(r_queue, l_queue, 0, swap_time, rr_quantum, scheduler);
 }
 
 /**
@@ -100,7 +100,7 @@ void signboard(double const swap_time, struct Node** r_queue, struct Node** l_qu
  * @param clength Largo del canal
  * @author Eduardo Bolivar Minguet
  */
-void tico(struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum, int clength) {
+void tico(struct Node** r_queue, struct Node** l_queue, char scheduler[20], double rr_quantum) {
     // Pasa W y swapTime iguales a 0 ya que no controla el flujo.
-    process_queues(r_queue, l_queue, 0, 0, rr_quantum, scheduler, clength);
+    process_queues(r_queue, l_queue, 0, 0, rr_quantum, scheduler);
 }

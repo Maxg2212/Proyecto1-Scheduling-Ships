@@ -19,16 +19,17 @@
  * @return Nuevo nodo
  * @author Eduardo Bolivar Minguet
  */
-struct Node* create_node(int pid, int priority, char* boat_type, double burst_time, int x, int y, CEthread_t* t) {
+struct Node* create_node(int pid, int priority, char* boat_type, int speed, int x, int y, CEthread_t* t, int channel) {
     struct Node* new_node = malloc(sizeof(struct Node));
     new_node->pid = pid;
     new_node->priority = priority;
     strcpy(new_node->boat_type, boat_type);
-    new_node->burst_time = burst_time;
+    new_node->speed = speed;
     new_node->x = x;
     new_node->y = y;
     new_node->t = t;
     new_node->next = nullptr;
+    new_node->channel = channel;
     return new_node;
 }
 
@@ -44,15 +45,15 @@ struct Node* create_node(int pid, int priority, char* boat_type, double burst_ti
  * @param t hilo
  * @author Eduardo Bolivar
  */
-void add_to_queue(struct Node** queue_ref, int pid, int priority, char* boat_type, double burst_time, int x, int y, CEthread_t* t) {
+void add_to_queue(struct Node** queue_ref, int pid, int priority, char* boat_type, int speed, int x, int y, CEthread_t* t, int channel) {
     if (*queue_ref == nullptr) {
-        *queue_ref = create_node(pid, priority, boat_type, burst_time, x, y, t);
+        *queue_ref = create_node(pid, priority, boat_type, speed, x, y, t, channel);
     } else {
         struct Node* current = *queue_ref;
         while (current->next != nullptr) {
             current = current->next;
         }
-        current->next = create_node(pid, priority, boat_type, burst_time, x, y, t);
+        current->next = create_node(pid, priority, boat_type, speed, x, y, t, channel);
     }
 }
 
