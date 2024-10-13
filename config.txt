@@ -1,4 +1,4 @@
-Scheduler=Prioridad
+Scheduler=FCFS
 Flow=Equidad
 W=3
 TimeSwap=3

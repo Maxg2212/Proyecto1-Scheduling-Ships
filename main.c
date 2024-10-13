@@ -259,6 +259,8 @@ int main() {
     patrolBoatsLeft = tmp1;
     patrolBoatsRight = tmp2;
 
+    init_mutex();   // Inicializar mutex
+
     while (running_global) {
 
         totalPatrolBoats = patrolBoatsLeft + patrolBoatsRight;

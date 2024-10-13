@@ -8,31 +8,58 @@
 #include <time.h>
 #include <SDL2/SDL.h>
 
+CEthread_mutex_t *pos_mutex;
+int mode = 0;
+
 /**
  * Funcion que ejecuta hilos uno tras otro. Para los algoritmos FCFS, Prioridad, SJF y EDF.
- * @param arg Nodo que funciona como PCB.
+ * @param arg Nodo que funciona como info del barco.
  * @return Estado de ejecucion
  * @author Eduardo Bolivar Minguet
  */
 void move_boat(void* arg) {
-    struct Node* PCB = arg;
-    int direction = (PCB->x < 900) ? 1 : -1;
-    while (direction == 1 && PCB->x < 900 + PCB->channel / 2) {
-        if (820 - PCB->channel / 2 < PCB->x && PCB->x < 900 + PCB->channel / 2) {
-            PCB->y = 295;
+    struct Node* this_boat = arg;
+
+    int direction = (this_boat->x < 900) ? 1 : -1;
+    while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
+        if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
+            this_boat->y = 295;
         } else {
-            PCB->y = 230;
+            this_boat->y = 230;
         }
-        PCB->x += direction * PCB->speed;
+        this_boat->x += direction * this_boat->speed;
         SDL_Delay(16);
     }
-    while (direction == -1 && PCB->x > 820 - PCB->channel / 2) {
-        if (820 - PCB->channel / 2 < PCB->x && PCB->x < 900 + PCB->channel / 2) {
-            PCB->y = 295;
+    while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
+        if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
+            this_boat->y = 295;
         } else {
-            PCB->y = 370;
+            this_boat->y = 370;
         }
-        PCB->x += direction * PCB->speed;
+        this_boat->x += direction * this_boat->speed;
+        SDL_Delay(16);
+    }
+}
+
+void move_patrol(void* arg) {
+    struct Node* this_boat = arg;
+    int direction = (this_boat->x < 900) ? 1 : -1;
+    while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
+        if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
+            this_boat->y = 295;
+        } else {
+            this_boat->y = 230;
+        }
+        this_boat->x += direction * 8;
+        SDL_Delay(16);
+    }
+    while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
+        if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
+            this_boat->y = 295;
+        } else {
+            this_boat->y = 370;
+        }
+        this_boat->x += direction * 8;
         SDL_Delay(16);
     }
 }
@@ -255,6 +282,7 @@ void shortest_job_first(struct Node** head, int const W, double const swapTime) 
  * @author Eduardo Bolivar Minguet
  */
 void first_come_first_served(struct Node** head, int W, double swapTime) {
+    mode = (W != 0) ? 1 : (swapTime != 0) ? 2 : 3;
     // Ejecuta W hilos para algoritmo Equidad
     for (struct Node* current = *head; current != nullptr; current = current->next) {
         CEthread_create(&current->t, nullptr, move_boat, current);
@@ -302,7 +330,7 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols) {
 
     // Aplica un FCFS
     for (struct Node* current = *head; numOfPatrols > 0 && current != nullptr; current = current->next) {
-        CEthread_create(&current->t, nullptr, move_boat, current);
+        CEthread_create(&current->t, nullptr, move_patrol, current);
         numOfPatrols--;
     }
     while (numOfPatrols2 > 0 && *head != nullptr) {
@@ -310,4 +338,8 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols) {
         remove_from_queue(head);
         numOfPatrols2--;
     }
+}
+
+void init_mutex() {
+    CEmutex_init(&pos_mutex, nullptr);
 }

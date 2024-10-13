@@ -47,14 +47,16 @@ struct Node* create_node(int pid, int priority, char* boat_type, int speed, int 
  * @author Eduardo Bolivar
  */
 void add_to_queue(struct Node** queue_ref, int pid, int priority, char* boat_type, int speed, int x, int y, CEthread_t* t, int channel) {
+    struct Node* new_node = create_node(pid, priority, boat_type, speed, x, y, t, channel, nullptr);
     if (*queue_ref == nullptr) {
-        *queue_ref = create_node(pid, priority, boat_type, speed, x, y, t, channel, nullptr);
+        *queue_ref = new_node;
     } else {
         struct Node* current = *queue_ref;
         while (current->next != nullptr) {
             current = current->next;
         }
-        current->next = create_node(pid, priority, boat_type, speed, x, y, t, channel, current);
+        current->next = new_node;
+        new_node->prev = current;
     }
 }
 
