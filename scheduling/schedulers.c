@@ -256,30 +256,12 @@ void shortest_job_first(struct Node** head, int const W, double const swapTime) 
  */
 void first_come_first_served(struct Node** head, int W, double swapTime) {
     // Ejecuta W hilos para algoritmo Equidad
-    if (W != 0) {
-        int tmpW = W;
-        for (struct Node* current = *head; tmpW > 0 && current != nullptr; current = current->next) {
-            CEthread_create(&current->t, nullptr, move_boat, current);
-            tmpW--;
-        }
-        while (W > tmpW) {
-            CEthread_join((*head)->t);
-            remove_from_queue(head);
-            W--;
-        }
+    for (struct Node* current = *head; current != nullptr; current = current->next) {
+        CEthread_create(&current->t, nullptr, move_boat, current);
     }
-    // Ejecuta la cantidad de hilos posible dentro del tiempo del letrero en el algoritmo Letrero
-    else if (swapTime != 0) {
-        clock_t letrero_start = clock();
-        while (swapTime > (double) (clock() - letrero_start) / CLOCKS_PER_SEC && *head != nullptr) {
-            CEthread_create(&(*head)->t, nullptr, move_boat, *head);
-            CEthread_join((*head)->t);
-            remove_from_queue(head);
-        }
-    }
-    // Algoritmo Tico
-    else {
-
+    for (struct Node* current = *head; current != nullptr; current = current->next) {
+        CEthread_join((*head)->t);
+        remove_from_queue(head);
     }
 }
 
@@ -312,10 +294,20 @@ struct Node* sort_by_patrols(struct Node* head) {
  * @param numOfPatrols Cantidad de patrullas que debe dejar pasar.
  * @param length Largo del canal
  */
-void earliest_deadline_first(struct Node** head, int const numOfPatrols) {
+void earliest_deadline_first(struct Node** head, int numOfPatrols) {
     // Ordena patrullas primero
     *head = sort_by_patrols(*head);
 
+    int numOfPatrols2 = numOfPatrols;
+
     // Aplica un FCFS
-    first_come_first_served(head, numOfPatrols, 0);
+    for (struct Node* current = *head; numOfPatrols > 0 && current != nullptr; current = current->next) {
+        CEthread_create(&current->t, nullptr, move_boat, current);
+        numOfPatrols--;
+    }
+    while (numOfPatrols2 > 0 && *head != nullptr) {
+        CEthread_join((*head)->t);
+        remove_from_queue(head);
+        numOfPatrols2--;
+    }
 }
