@@ -27,33 +27,41 @@ void process_queues(struct Node** r_queue, struct Node** l_queue, int W, double 
 
     // First Come First Served
     if (strcmp(scheduler, "FCFS") == 0) {
-        while (*r_queue != nullptr || *l_queue != nullptr) {
+        if (*l_queue != nullptr) {
             first_come_first_served(l_queue, W, swapTime);
+        }
+        if (*r_queue != nullptr) {
             first_come_first_served(r_queue, W, swapTime);
         }
     }
 
     // Round Robin
     else if (strcmp(scheduler, "RR") == 0) {
-        while (*r_queue != nullptr || *l_queue != nullptr) {
+        if (*l_queue != nullptr) {
             round_robin(l_queue, W, swapTime, rr_quantum);
+        }
+        if (*r_queue != nullptr) {
             round_robin(r_queue, W, swapTime, rr_quantum);
         }
     }
 
     // Shortest Job First
     else if (strcmp(scheduler, "SJF") == 0) {
-        while (*r_queue != nullptr || *l_queue != nullptr) {
+        if (*l_queue != nullptr) {
             shortest_job_first(l_queue, W, swapTime);
+        }
+        if (*r_queue != nullptr) {
             shortest_job_first(r_queue, W, swapTime);
         }
     }
 
     // Priority
     else if (strcmp(scheduler, "Prioridad") == 0) {
-        while (*r_queue != nullptr || *l_queue != nullptr) {
+        if (*l_queue != nullptr) {
             priority(l_queue, W, swapTime);
-            priority(r_queue, W, swapTime);
+        }
+        if (*r_queue != nullptr) {
+            priority(r_queue, W, swapTime);first_come_first_served(r_queue, W, swapTime);
         }
     } else {
         perror("Unknown scheduler");
