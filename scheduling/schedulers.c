@@ -10,6 +10,8 @@
 
 CEthread_mutex_t *pos_mutex;
 int mode = 0;
+int W = 0;
+double swap = 0;
 
 /**
  * Funcion que ejecuta hilos uno tras otro. Para los algoritmos FCFS, Prioridad, SJF y EDF.
@@ -281,7 +283,9 @@ void shortest_job_first(struct Node** head, int const W, double const swapTime) 
  * @param head Puntero a la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void first_come_first_served(struct Node** head, int W, double swapTime) {
+void first_come_first_served(struct Node** head, int local_W, double swapTime) {
+    W = local_W;
+    swap = swapTime;
     mode = (W != 0) ? 1 : (swapTime != 0) ? 2 : 3;
     // Ejecuta W hilos para algoritmo Equidad
     for (struct Node* current = *head; current != nullptr; current = current->next) {
