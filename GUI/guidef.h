@@ -5,6 +5,11 @@
 #ifndef GUIDEF_H
 #define GUIDEF_H
 
-void start_gui();
+#include "../scheduling/linked_list.h"
+
+void init_gui();
+void destroy_gui();
+void render_gui(struct Node* left_queue, struct Node* right_queue, int channel_length);
+uint32_t get_event();
 
 #endif //GUIDEF_H

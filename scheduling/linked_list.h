@@ -7,16 +7,18 @@
 #include "../CEThreads/CEthread.h"
 
 struct Node {
-    int pid, priority;
+    int pid;
+    int priority;
     char boat_type[10];
-    double burst_time, boat_position;
-    CEthread_t* process;
+    double burst_time;
+    int x, y;
+    CEthread_t* t;
     struct Node* next;
 };
 
-struct Node* create_node(int id, double burst_time, int priority, char boat_type[10], double position, CEthread_t* process);
-void add_to_queue(struct Node** queue_ref, int id, double burst_time, int priority, char* boat_type, double position, CEthread_t* process);
+struct Node* create_node(int pid, int priority, char* boat_type, double burst_time, int x, int y, CEthread_t* t);
+void add_to_queue(struct Node** queue_ref, int pid, int priority, char* boat_type, double burst_time, int x, int y, CEthread_t* t);
 void remove_from_queue(struct Node** queue_ref);
-int get_length(struct Node* queue_ref);
+int get_length(const struct Node* queue_ref);
 
 #endif //LINKED_LIST_H

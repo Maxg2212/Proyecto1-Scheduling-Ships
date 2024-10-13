@@ -39,26 +39,6 @@ const char* get_random_boat() {
 }
 
 /**
- * Detecta la interrupcion por teclado e invoca a la funcion para generar un barco random.
- * @author Eduardo Bolivar Minguet
- * @see get_random_boat
- */
-void add_boat_by_key() {
-    CEthread_t* thread;
-    int side = (rand() % 2) + 1;
-    switch (side) {
-        case 1:
-            add_to_queue(&left_queue, id_left++, 4, 0, get_random_boat(), 0, thread);
-            left_queue->boat_position = 0;
-            break;
-        case 2:
-            add_to_queue(&right_queue, id_right++, 4, 0, get_random_boat(), channelLength, thread);
-            right_queue->boat_position = 100;
-            break;
-    }
-}
-
-/**
  * Llena las colas de barcos con la informacion del archivo de configuracion.
  * @param side Lado al que se agrega el barco: cola derecha o cola izquierda.
  * @author Eduardo Bolivar Minguet
@@ -69,28 +49,28 @@ void add_boat(const int side) {
     strcpy(b_type, get_random_boat());
     if (side == 0) {
         if (strcmp(b_type, "Normal") == 0 && normalBoatsLeft > 0) {
-            add_to_queue(&left_queue, id_left++, (double) channelLength / boatSpeed, normalPriority, b_type, 0, thread);
+            add_to_queue(&left_queue, id_left++, normalPriority, b_type, (double) channelLength / boatSpeed, 0, 0, thread);
             normalBoatsLeft--;
         } else if (strcmp(b_type, "Pesquero") == 0 && fishingBoatsLeft > 0) {
-            add_to_queue(&left_queue, id_left++, (double) channelLength / (1.5 * boatSpeed), fishingPriority, b_type, 0, thread);
+            add_to_queue(&left_queue, id_left++, fishingPriority, b_type, (double) channelLength / (1.5 * boatSpeed), 0, 0, thread);
             fishingBoatsLeft--;
         } else if (strcmp(b_type, "Patrulla") == 0 && patrolBoatsLeft > 0) {
             // La velocidad asignada a la patrulla depende de su deadline y de la cantidad de patrullas.
             // Esto para lograr que todas las patrullas pasen antes de que se cumpla el deadline
-            add_to_queue(&left_queue, id_left++, (double) patrolDeadline / totalPatrolBoats, 0, b_type, 0, thread);
+            add_to_queue(&left_queue, id_left++, 0, b_type, (double) patrolDeadline / totalPatrolBoats, 0, 0, thread);
             patrolBoatsLeft--;
         }
     } else {
         if (strcmp(b_type, "Normal") == 0 && normalBoatsRight > 0) {
-            add_to_queue(&right_queue, id_right++, (double) channelLength / boatSpeed, normalPriority, b_type, channelLength, thread);
+            add_to_queue(&right_queue, id_right++, normalPriority, b_type, (double) channelLength / boatSpeed, 0, 0, thread);
             normalBoatsRight--;
         } else if (strcmp(b_type, "Pesquero") == 0 && fishingBoatsRight > 0) {
-            add_to_queue(&right_queue, id_right++, (double) channelLength / (1.5 * boatSpeed), fishingPriority, b_type, channelLength, thread);
+            add_to_queue(&right_queue, id_right++, fishingPriority, b_type, (double) channelLength / (1.5 * boatSpeed), 0, 0, thread);
             fishingBoatsRight--;
         } else if (strcmp(b_type, "Patrulla") == 0 && patrolBoatsRight > 0) {
             // La velocidad asignada a la patrulla depende de su deadline y de la cantidad de patrullas.
             // Esto para lograr que todas las patrullas pasen antes de que se cumpla el deadline
-            add_to_queue(&right_queue, id_right++, (double) patrolDeadline / totalPatrolBoats, 0, b_type, channelLength, thread);
+            add_to_queue(&right_queue, id_right++, 0, b_type, (double) patrolDeadline / totalPatrolBoats, 0, 0, thread);
             patrolBoatsRight--;
         }
     }
@@ -161,25 +141,30 @@ void read_config() {
     fclose(file);
 }
 
+void* gui_thread(void* arg) {
+    init_gui();
+    int running = 1;
+    while (running) {
+        if (get_event() == SDL_QUIT) {
+            running = 0;
+        }
+        render_gui(left_queue, right_queue, channelLength);
+    }
+    destroy_gui();
+    return nullptr;
+}
+
 /**
  * Funcion principal del programa.
  * @return estado de ejecucion
  */
 int main() {
-    start_gui();
     srand(time(nullptr));
+
+    CEthread_t* main_gui = nullptr;
 
     // Lee el archivo de configuracion
     read_config();
-
-    // Verifica que el canal cumpla con limites
-    if (channelLength > 500) {
-        perror("Channel length too large");
-        return 1;
-    } if (channelLength < 100) {
-        perror("Channel length too small");
-        return 1;
-    }
 
     // Agrega barcos a las colas dependiendo de la configuracion
     while (normalBoatsLeft + fishingBoatsLeft + patrolBoatsLeft > 0) {
@@ -191,36 +176,8 @@ int main() {
         add_boat(1);
     }
 
-    patrolBoatsLeft = tmp1;
-    patrolBoatsRight = tmp2;
-
-    // Verifica que hayan patrullas en alguna de las colas ya que tienen tratamiento de urgencia
-    if (totalPatrolBoats > 0) {
-        // Atiende patrullas con algoritmo EDF
-        earliest_deadline_first(&left_queue, patrolBoatsLeft, channelLength);
-        earliest_deadline_first(&right_queue, patrolBoatsRight, channelLength);
-    }
-
-    // Verifica cual control de flujo es el configurado
-    if (strcmp(flow, "Equidad") == 0) {
-
-        // Ejecuta equidad
-        equity(w, &right_queue, &left_queue, scheduler, quantum, channelLength);
-
-    } else if (strcmp(flow, "Letrero") == 0) {
-
-        // Ejecuta letrero
-        signboard(timeSwap, &right_queue, &left_queue, scheduler, quantum, channelLength);
-
-    } else if (strcmp(flow, "Tico") == 0) {
-
-        // Ejecuta tico
-        tico(&right_queue, &left_queue, scheduler, quantum,  channelLength);
-
-    } else {
-        perror("Unexpected Flow Algorithm");
-        return 1;
-    }
+    CEthread_create(&main_gui, nullptr, gui_thread, nullptr);
+    CEthread_join(main_gui);
 
     return 0;
 }

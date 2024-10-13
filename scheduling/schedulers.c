@@ -18,12 +18,7 @@ int channel = 0;
  * @author Eduardo Bolivar Minguet
  */
 void update_position(struct Node* node, int direction) {
-    // Update the boat position based on direction
-    if (direction > 0) {
-        node->boat_position += channel / node->burst_time;
-    } else {
-        node->boat_position -= channel / node->burst_time;
-    }
+
 }
 
 /**
@@ -33,13 +28,7 @@ void update_position(struct Node* node, int direction) {
  * @author Eduardo Bolivar Minguet
  */
 int thread_func(void* arg) {
-    struct Node* node = (struct Node*)arg;
-    int const direction = (node->boat_position == 0) ? 1 : -1;
-    while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
-        update_position(node, direction);
-    }
-    printf("Hilo: %d - Bote: %s - Cola: %s\n", node->pid, node->boat_type, (direction == 1) ? "Izquierda" : "Derecha");
-    return 0;
+
 }
 
 // Variables compartidas para la ejecucion de Round Robin
@@ -56,29 +45,7 @@ CEthread_mutex_t* mutex;
  * @author Eduardo Bolivar Minguet
  */
 int thread_func_rr(void* arg) {
-    struct Node* node = (struct Node*)arg;
-    int const direction = (node->boat_position == 0) ? 1 : -1;
-    while ((direction == 1 && node->boat_position <= channel) || (direction == -1 && node->boat_position >= 0)) {
 
-        // Lock the mutex
-        CEmutex_trylock(mutex);
-
-        // Check shared resource
-        if (turn == node->pid) {
-            clock_t start = clock();
-            while (quantum1 > (double) (clock() - start) / CLOCKS_PER_SEC) {
-                update_position(node, direction);
-            }
-
-            // Modify shared resource
-            turn = (turn + 1) % currently_executing + base + 1;
-        }
-
-        // Unlock mutex
-        CEmutex_unlock(mutex);
-    }
-    printf("Hilo: %d - Bote: %s - Cola: %s\n", node->pid, node->boat_type, (direction == 1) ? "Izquierda" : "Derecha");
-    return 0;
 }
 
 /**
@@ -112,7 +79,7 @@ void round_robin(struct Node** head, int const W, double const swapTime, double 
         int tmpW = W;
 
         while (tmpW > 0 && current != nullptr) {
-            CEthread_create(&current->process, nullptr, thread_func_rr, current);
+            CEthread_create(&current->t, nullptr, thread_func_rr, current);
             current = current->next; // Move to the next node
             tmpW--;
         }
@@ -121,7 +88,7 @@ void round_robin(struct Node** head, int const W, double const swapTime, double 
         current = *head;
 
         while (tmpW > 0 && current != nullptr) {
-            CEthread_join(current->process);
+            CEthread_join(current->t);
             struct Node* next = current->next;
             remove_from_queue(&current);
             current = next;
@@ -145,7 +112,7 @@ void round_robin(struct Node** head, int const W, double const swapTime, double 
         // For each thread created, do the corresponding join function.
         int tmpX = currently_executing;
         while (tmpX > 0 && current != nullptr) {
-            CEthread_create(&current->process, nullptr, thread_func_rr, current);
+            CEthread_create(&current->t, nullptr, thread_func_rr, current);
             current = current->next;
             tmpX--;
         }
@@ -154,7 +121,7 @@ void round_robin(struct Node** head, int const W, double const swapTime, double 
         current = *head;
 
         while (tmpX > 0 && current != nullptr) {
-            CEthread_join(current->process);
+            CEthread_join(current->t);
             struct Node* next = current->next;
             remove_from_queue(&current);
             current = next;
@@ -187,10 +154,6 @@ void swapAttributes(struct Node* i, struct Node* j) {
     i->priority = j->priority;
     j->priority = temp_priority;
 
-    const double temp_position = i->boat_position;
-    i->boat_position = j->boat_position;
-    j->boat_position = temp_position;
-
     strcpy(temp_boat_type, i->boat_type);
     strcpy(i->boat_type, j->boat_type);
     strcpy(j->boat_type, temp_boat_type);
@@ -198,10 +161,6 @@ void swapAttributes(struct Node* i, struct Node* j) {
     const double temp_burst = i->burst_time;
     i->burst_time = j->burst_time;
     j->burst_time = temp_burst;
-
-    CEthread_t* temp_process = i->process;
-    i->process = j->process;
-    j->process = temp_process;
 }
 
 /**
@@ -296,8 +255,8 @@ void first_come_first_served(struct Node** head, int W, double swapTime, int con
     // Ejecuta W hilos para algoritmo Equidad
     if (W != 0) {
         while (W > 0 && *head != nullptr) {
-            CEthread_create(&(*head)->process, nullptr, thread_func, *head);
-            CEthread_join((*head)->process);
+            CEthread_create(&(*head)->t, nullptr, thread_func, *head);
+            CEthread_join((*head)->t);
             remove_from_queue(head);
             W--;
         }
@@ -306,8 +265,8 @@ void first_come_first_served(struct Node** head, int W, double swapTime, int con
     else if (swapTime != 0) {
         clock_t letrero_start = clock();
         while (swapTime > (double) (clock() - letrero_start) / CLOCKS_PER_SEC && *head != nullptr) {
-            CEthread_create(&(*head)->process, nullptr, thread_func, *head);
-            CEthread_join((*head)->process);
+            CEthread_create(&(*head)->t, nullptr, thread_func, *head);
+            CEthread_join((*head)->t);
             remove_from_queue(head);
         }
     }
