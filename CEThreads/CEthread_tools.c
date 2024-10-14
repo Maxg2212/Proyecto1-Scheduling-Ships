@@ -17,7 +17,7 @@
  */
 void* allocate_mem(size_t size){
 
-    void* mem = malloc(size);
+    void* mem = calloc(1,size);
     if (!mem) {
         perror("allocate_mem");
         exit(EXIT_FAILURE);
