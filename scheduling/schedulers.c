@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include <SDL2/SDL.h>
+#include "../HW/arduino-serial-lib.h"
 
 CEthread_mutex_t *pos_mutex;
 int mode = 0;
@@ -25,6 +27,7 @@ void move_boat(void* arg) {
     int direction = (this_boat->x < 900) ? 1 : -1;
     while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
 
+        init_izquierda();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -40,6 +43,7 @@ void move_boat(void* arg) {
         SDL_Delay(16);
     }
     while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
+        init_derecha();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -60,6 +64,7 @@ void move_patrol(void* arg) {
     struct Node* this_boat = arg;
     int direction = (this_boat->x < 900) ? 1 : -1;
     while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
+        //init_izquierda();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -69,6 +74,7 @@ void move_patrol(void* arg) {
         SDL_Delay(16);
     }
     while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
+        //init_derecha();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -355,6 +361,21 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols) {
         remove_from_queue(head);
         numOfPatrols2--;
     }
+}
+void init_izquierda()
+{
+    const char* mes = "a";
+    int dev = serialport_init("/dev/ttyACM0", 9600);
+    //usleep(2000);
+    serialport_write(dev, mes);
+}
+
+void init_derecha()
+{
+    const char* mes = "b";
+    int dev = serialport_init("/dev/ttyACM0", 9600);
+    //usleep(2000);
+    serialport_write(dev, mes);
 }
 
 void init_mutex() {
