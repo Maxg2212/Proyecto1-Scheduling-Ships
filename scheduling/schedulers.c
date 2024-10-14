@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include <SDL2/SDL.h>
+#include "../HW/arduino-serial-lib.h"
 
 CEthread_mutex_t *pos_mutex, *w_mutex;
 int mode = 0;
@@ -269,6 +270,21 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols) {
         remove_from_queue(head);
         numOfPatrols2--;
     }
+}
+void init_izquierda()
+{
+    const char* mes = "a";
+    int dev = serialport_init("/dev/ttyACM0", 9600);
+    //usleep(2000);
+    serialport_write(dev, mes);
+}
+
+void init_derecha()
+{
+    const char* mes = "b";
+    int dev = serialport_init("/dev/ttyACM0", 9600);
+    //usleep(2000);
+    serialport_write(dev, mes);
 }
 
 void init_mutex() {
