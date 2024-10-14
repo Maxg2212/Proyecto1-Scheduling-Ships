@@ -68,7 +68,13 @@ void add_to_queue(struct Node** queue_ref, int pid, int priority, char* boat_typ
 void remove_from_queue(struct Node** queue_ref) {
     if (*queue_ref != nullptr) {
         struct Node* temp = *queue_ref;
+
+        if (temp->next != nullptr) {
+            temp->next->prev = nullptr;
+        }
+
         *queue_ref = temp->next;
+
         free(temp);
     }
 }

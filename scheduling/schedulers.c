@@ -24,12 +24,19 @@ void move_boat(void* arg) {
 
     int direction = (this_boat->x < 900) ? 1 : -1;
     while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
+
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
             this_boat->y = 230;
         }
-        this_boat->x += direction * this_boat->speed;
+
+        if (this_boat->prev == nullptr || (this_boat->prev != nullptr && this_boat->prev->x - this_boat->x + this_boat->speed > 100)) {
+            CEmutex_trylock(pos_mutex);
+            this_boat->x += direction * this_boat->speed;
+            CEmutex_unlock(pos_mutex);
+        }
+
         SDL_Delay(16);
     }
     while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
@@ -38,7 +45,13 @@ void move_boat(void* arg) {
         } else {
             this_boat->y = 370;
         }
-        this_boat->x += direction * this_boat->speed;
+
+        if (this_boat->prev == nullptr || (this_boat->prev != nullptr && this_boat->x - this_boat->prev->x - this_boat->speed > 100)) {
+            CEmutex_trylock(pos_mutex);
+            this_boat->x += direction * this_boat->speed;
+            CEmutex_unlock(pos_mutex);
+        }
+
         SDL_Delay(16);
     }
 }
