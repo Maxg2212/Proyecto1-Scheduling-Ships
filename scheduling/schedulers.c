@@ -193,9 +193,11 @@ void shortest_job_first(struct Node** head, int const W, double const swapTime) 
  * @author Eduardo Bolivar Minguet
  */
 void first_come_first_served(struct Node** head, int w, double swapTime) {
+
+    // Modo Equidad
+
     if (w != 0) {
         int tmpW = w;
-        // Ejecuta W hilos para algoritmo Equidad
         for (struct Node* current = *head; tmpW > 0 && current != nullptr; current = current->next) {
             CEthread_create(&current->t, nullptr, move_boat, current);
             tmpW--;
@@ -204,6 +206,40 @@ void first_come_first_served(struct Node** head, int w, double swapTime) {
             CEthread_join((*head)->t);
             remove_from_queue(head);
             w--;
+        }
+    }
+
+    // Modo Letrero
+
+    else if (swapTime != 0) {
+        clock_t start_time = clock();
+        struct Node* current = *head;
+        int executing = 0;
+        while (swapTime > (double) (clock() - start_time) / CLOCKS_PER_SEC && current != nullptr) {
+            CEthread_create(&current->t, nullptr, move_boat, current);
+            executing++;
+            current = current->next;
+        }
+        while (executing > 0) {
+            CEthread_join((*head)->t);
+            remove_from_queue(head);
+            executing--;
+        }
+    }
+
+    // Modo tico
+
+    else {
+        int cantidad = (rand() + 1) % get_length(*head);
+        int tmpC = cantidad;
+        for (struct Node* current = *head; tmpC > 0 && current != nullptr; current = current->next) {
+            CEthread_create(&current->t, nullptr, move_boat, current);
+            tmpC--;
+        }
+        for (struct Node* current = *head; cantidad > 0 && current != nullptr; current = current->next) {
+            CEthread_join((*head)->t);
+            remove_from_queue(head);
+            cantidad--;
         }
     }
 }
@@ -241,18 +277,8 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols) {
     // Ordena patrullas primero
     *head = sort_by_patrols(*head);
 
-    int numOfPatrols2 = numOfPatrols;
-
     // Aplica un FCFS
-    for (struct Node* current = *head; numOfPatrols > 0 && current != nullptr; current = current->next) {
-        CEthread_create(&current->t, nullptr, move_patrol, current);
-        numOfPatrols--;
-    }
-    while (numOfPatrols2 > 0 && *head != nullptr) {
-        CEthread_join((*head)->t);
-        remove_from_queue(head);
-        numOfPatrols2--;
-    }
+    first_come_first_served(head, numOfPatrols, 0);
 }
 void init_izquierda()
 {
