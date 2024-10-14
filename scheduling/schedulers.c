@@ -27,7 +27,7 @@ void move_boat(void* arg) {
     int direction = (this_boat->x < 900) ? 1 : -1;
     while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
 
-        init_izquierda();
+        //init_izquierda();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -43,7 +43,7 @@ void move_boat(void* arg) {
         SDL_Delay(16);
     }
     while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
-        init_derecha();
+        //init_derecha();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
