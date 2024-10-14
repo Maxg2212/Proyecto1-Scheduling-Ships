@@ -8,7 +8,7 @@
 #include <time.h>
 #include <SDL2/SDL.h>
 
-CEthread_mutex_t *pos_mutex;
+CEthread_mutex_t *pos_mutex, *w_mutex;
 int mode = 0;
 int W = 0;
 double swap = 0;
@@ -22,6 +22,9 @@ double swap = 0;
 void move_boat(void* arg) {
     struct Node* this_boat = arg;
 
+    int const border1 = 900 - this_boat->channel / 2;
+    int const border2 = 900 + this_boat->channel / 2;
+
     int direction = (this_boat->x < 900) ? 1 : -1;
     while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
 
@@ -32,9 +35,17 @@ void move_boat(void* arg) {
         }
 
         if (this_boat->prev == nullptr || (this_boat->prev != nullptr && this_boat->prev->x - this_boat->x + this_boat->speed > 100)) {
-            CEmutex_trylock(pos_mutex);
-            this_boat->x += direction * this_boat->speed;
-            CEmutex_unlock(pos_mutex);
+            if (W > 0 || this_boat->x + 100 < border1 || (this_boat->x + 100 > border1 && W == 0)) {
+                CEmutex_trylock(pos_mutex);
+                this_boat->x += direction * this_boat->speed;
+                CEmutex_unlock(pos_mutex);
+
+                if (this_boat->x + 100 == border1) {
+                    CEmutex_trylock(w_mutex);
+                    W--;
+                    CEmutex_unlock(w_mutex);
+                }
+            }
         }
 
         SDL_Delay(16);
@@ -47,9 +58,17 @@ void move_boat(void* arg) {
         }
 
         if (this_boat->prev == nullptr || (this_boat->prev != nullptr && this_boat->x - this_boat->prev->x - this_boat->speed > 100)) {
-            CEmutex_trylock(pos_mutex);
-            this_boat->x += direction * this_boat->speed;
-            CEmutex_unlock(pos_mutex);
+            if (W > 0 || this_boat->x > border2 || (this_boat->x < border2 && W == 0)) {
+                CEmutex_trylock(pos_mutex);
+                this_boat->x += direction * this_boat->speed;
+                CEmutex_unlock(pos_mutex);
+
+                if (this_boat->x == border2) {
+                    CEmutex_trylock(w_mutex);
+                    W--;
+                    CEmutex_unlock(w_mutex);
+                }
+            }
         }
 
         SDL_Delay(16);
@@ -77,111 +96,6 @@ void move_patrol(void* arg) {
         this_boat->x += direction * 8;
         SDL_Delay(16);
     }
-}
-
-// Variables compartidas para la ejecucion de Round Robin
-int turn, base, currently_executing;
-double quantum1;
-CEthread_mutex_t* mutex;
-
-/**
- * Es el modelo de la funcion adaptado a la calendarizacion Round Robin.
- * Utiliza mutex y conditions para turnar a los hilos que acceden a la funcion y les da permiso para ejecutar durante
- * un quantum definido.
- * @param arg Nodo que funciona como PCB del hilo.
- * @return Estado de ejecucion
- * @author Eduardo Bolivar Minguet
- */
-int thread_func_rr(void* arg) {
-
-}
-
-/**
- * Calendarizacion que inicia todos los hilos a la vez.
- * La funcion thread_func_rr es la encargada de turnar la ejecucion de los hilos
- * @param head Puntero a la primera posicion de la cola de hilos
- * @param W Es el parametro W de cuantos barcos pasan.
- * @param swapTime Es el tiempo de cambio del letrero.
- * @param local_quantum Es el quantum que va a utilizar.
- * @param length Es el largo del canal
- * @author Eduardo Bolivar Minguet
- */
-void round_robin(struct Node** head, int const W, double const swapTime, double local_quantum) {
-    // Initiliaze mutex
-    CEmutex_init(&mutex, NULL);
-
-    // Initialize RR required information
-    turn = (*head)->pid;
-    base = turn - 1;
-    quantum1 = local_quantum;
-
-    struct Node* current = *head; // Use a separate pointer to traverse the list
-
-    // If W != 0, then the channel flow is Equidad
-    if (W != 0) {
-
-        // The executing threads will be given by W only if W is less than the length of queue
-        currently_executing = get_length(*head) >= W ? W : get_length(*head);
-
-        int tmpW = W;
-
-        while (tmpW > 0 && current != nullptr) {
-            CEthread_create(&current->t, nullptr, thread_func_rr, current);
-            current = current->next; // Move to the next node
-            tmpW--;
-        }
-
-        tmpW = W;
-        current = *head;
-
-        while (tmpW > 0 && current != nullptr) {
-            CEthread_join(current->t);
-            struct Node* next = current->next;
-            remove_from_queue(&current);
-            current = next;
-            tmpW--;
-        }
-    }
-    // If SwapTime != 0, then channel flow is Letrero
-    else if (swapTime != 0) {
-
-        // Set the variable to accumulate executing threads during Letrero time is active
-        currently_executing = 0;
-
-        // Start the timer
-        clock_t const sign_start = clock();
-
-        // Set how many
-        while (swapTime > (double) (clock() - sign_start) / CLOCKS_PER_SEC) {
-            currently_executing++;
-        }
-
-        // For each thread created, do the corresponding join function.
-        int tmpX = currently_executing;
-        while (tmpX > 0 && current != nullptr) {
-            CEthread_create(&current->t, nullptr, thread_func_rr, current);
-            current = current->next;
-            tmpX--;
-        }
-
-        tmpX = currently_executing;
-        current = *head;
-
-        while (tmpX > 0 && current != nullptr) {
-            CEthread_join(current->t);
-            struct Node* next = current->next;
-            remove_from_queue(&current);
-            current = next;
-            tmpX--;
-        }
-    }
-    // If W and SwapTime are 0, then the flow is Tico
-    else {
-
-    }
-
-    *head = current;
-    CEmutex_destroy(mutex);
 }
 
 /**
@@ -359,4 +273,5 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols) {
 
 void init_mutex() {
     CEmutex_init(&pos_mutex, nullptr);
+    CEmutex_init(&w_mutex, nullptr);
 }

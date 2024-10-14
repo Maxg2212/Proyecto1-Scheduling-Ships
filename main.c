@@ -15,7 +15,7 @@ char flow[20];
 int w, channelLength, boatSpeed, normalPriority, fishingPriority, patrolDeadline;
 int normalBoatsRight, fishingBoatsRight, patrolBoatsRight;
 int normalBoatsLeft, fishingBoatsLeft, patrolBoatsLeft;
-double timeSwap, quantum;
+double timeSwap;
 
 int totalPatrolBoats, tmp1, tmp2;
 
@@ -173,8 +173,6 @@ void read_config() {
             fishingPriority = atoi(value);
         } else if (strcmp(key, "PatrolDeadline") == 0) {
             patrolDeadline = atoi(value);
-        } else if (strcmp(key, "RRQuantum") == 0) {
-            quantum = atof(value);
         }
     }
     totalPatrolBoats = patrolBoatsLeft + patrolBoatsRight;
@@ -274,11 +272,11 @@ int main() {
         }
 
         if (strcmp(flow, "Equidad") == 0) {
-            equity(w, &right_queue, &left_queue, scheduler, quantum);
+            equity(w, &right_queue, &left_queue, scheduler);
         } else if (strcmp(flow, "Letrero") == 0) {
-            signboard(timeSwap, &right_queue, &left_queue, scheduler, quantum);
+            signboard(timeSwap, &right_queue, &left_queue, scheduler);
         } else if (strcmp(flow, "Tico") == 0) {
-            tico(&right_queue, &left_queue, scheduler, quantum);
+            tico(&right_queue, &left_queue, scheduler);
         }
     }
 
