@@ -28,7 +28,7 @@ int id_right = 1;
 int running_global = 0;
 
 // --------------------------------------------------------------------------------
-
+//Comentario equis
 /**
  * Genera un tipo de barco de entre los tres disponibles de forma aleatoria.
  * @return Cadena de caracteres con el nombre del barco.
