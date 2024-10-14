@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -204,6 +205,9 @@ void* gui_thread(void* arg) {
                 add_boat_by_key(1);
             } else if (event_data[1] == SDLK_d) {
                 add_boat_by_key(2);
+            } else if (event_data[1] == SDLK_w) {
+                running = 0;
+                running_global = 0;
             }
         }
 

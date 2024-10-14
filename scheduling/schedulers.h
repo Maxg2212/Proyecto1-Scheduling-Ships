@@ -14,5 +14,6 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols);
 void init_izquierda();
 void init_derecha();
 void init_mutex();
+void kill_mutex();
 
 #endif //FCFS_H

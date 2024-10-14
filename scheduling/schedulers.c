@@ -283,6 +283,7 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols) {
     // Aplica un FCFS
     first_come_first_served(head, numOfPatrols, 0);
 }
+
 void init_izquierda()
 {
     const char* mes = "a";
@@ -302,4 +303,9 @@ void init_derecha()
 void init_mutex() {
     CEmutex_init(&pos_mutex, nullptr);
     CEmutex_init(&w_mutex, nullptr);
+}
+
+void kill_mutex() {
+    CEmutex_destroy(pos_mutex);
+    CEmutex_destroy(w_mutex);
 }
