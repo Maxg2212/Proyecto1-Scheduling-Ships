@@ -21,16 +21,11 @@ double swap = 0;
  * @return Estado de ejecucion
  * @author Eduardo Bolivar Minguet
  */
-void move_boat(void* arg) {
+void move_boat_left(void* arg) {
     struct Node* this_boat = arg;
 
-    int const border1 = 900 - this_boat->channel / 2;
-    int const border2 = 900 + this_boat->channel / 2;
-
-    int direction = (this_boat->x < 900) ? 1 : -1;
-    while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
-
-        init_izquierda();
+    while (this_boat->x < 900 + this_boat->channel / 2) {
+        //init_izquierda();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -38,23 +33,20 @@ void move_boat(void* arg) {
         }
 
         if (this_boat->prev == nullptr || (this_boat->prev != nullptr && this_boat->prev->x - this_boat->x + this_boat->speed > 100)) {
-            if (W > 0 || this_boat->x + 100 < border1 || (this_boat->x + 100 > border1 && W == 0)) {
-                CEmutex_trylock(pos_mutex);
-                this_boat->x += direction * this_boat->speed;
-                CEmutex_unlock(pos_mutex);
-
-                if (this_boat->x + 100 == border1) {
-                    CEmutex_trylock(w_mutex);
-                    W--;
-                    CEmutex_unlock(w_mutex);
-                }
-            }
+            CEmutex_trylock(pos_mutex);
+            this_boat->x += this_boat->speed;
+            CEmutex_unlock(pos_mutex);
         }
-
         SDL_Delay(16);
     }
-    while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
-        init_derecha();
+}
+
+
+void move_boat_right(void* arg) {
+    struct Node* this_boat = arg;
+
+    while (this_boat->x > 820 - this_boat->channel / 2) {
+        //init_derecha();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -62,22 +54,14 @@ void move_boat(void* arg) {
         }
 
         if (this_boat->prev == nullptr || (this_boat->prev != nullptr && this_boat->x - this_boat->prev->x - this_boat->speed > 100)) {
-            if (W > 0 || this_boat->x > border2 || (this_boat->x < border2 && W == 0)) {
-                CEmutex_trylock(pos_mutex);
-                this_boat->x += direction * this_boat->speed;
-                CEmutex_unlock(pos_mutex);
-
-                if (this_boat->x == border2) {
-                    CEmutex_trylock(w_mutex);
-                    W--;
-                    CEmutex_unlock(w_mutex);
-                }
-            }
+            CEmutex_trylock(pos_mutex);
+            this_boat->x -= this_boat->speed;
+            CEmutex_unlock(pos_mutex);
         }
-
         SDL_Delay(16);
     }
 }
+
 
 void move_patrol(void* arg) {
     struct Node* this_boat = arg;
@@ -161,12 +145,13 @@ struct Node* sort_by_priority(struct Node* head) {
  * @param length Largo del canal
  * @author Eduardo Bolivar Minguet
  */
-void priority(struct Node** head, int const W, double const swapTime) {
+void priority(struct Node** left, struct Node** right, int const W, double const swapTime) {
     // Ordena la cola por prioridad
-    *head = sort_by_priority(*head);
+    *left = sort_by_priority(*left);
+    *right = sort_by_priority(*right);
 
     // Ejecuta un FCFS de la cola ordenada.
-    first_come_first_served(head, W, swapTime);
+    first_come_first_served(left, right, W, swapTime);
 }
 
 /**
@@ -202,13 +187,14 @@ struct Node* sort_by_burst_time(struct Node* head) {
  * @param head Puntero a la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void shortest_job_first(struct Node** head, int const W, double const swapTime) {
+void shortest_job_first(struct Node** left, struct Node** right, int const W, double const swapTime) {
 
     // Ordena la cola por duracion de hilo
-    *head = sort_by_burst_time(*head);
+    *left = sort_by_burst_time(*left);
+    *right = sort_by_burst_time(*right);
 
     // Ejecuta un FCFS a la cola ordenada
-    first_come_first_served(head, W, swapTime);
+    first_come_first_served(left, right, W, swapTime);
 }
 
 /**
@@ -216,17 +202,27 @@ void shortest_job_first(struct Node** head, int const W, double const swapTime) 
  * @param head Puntero a la cola de hilos.
  * @author Eduardo Bolivar Minguet
  */
-void first_come_first_served(struct Node** head, int local_W, double swapTime) {
+void first_come_first_served(struct Node** left, struct Node** right, int local_W, double swapTime) {
     W = local_W;
     swap = swapTime;
     mode = (W != 0) ? 1 : (swapTime != 0) ? 2 : 3;
     // Ejecuta W hilos para algoritmo Equidad
-    for (struct Node* current = *head; current != nullptr; current = current->next) {
-        CEthread_create(&current->t, nullptr, move_boat, current);
+    for (struct Node* current = *left; current != nullptr; current = current->next) {
+        CEthread_create(&current->t, nullptr, move_boat_left, current);
     }
-    for (struct Node* current = *head; current != nullptr; current = current->next) {
-        CEthread_join((*head)->t);
-        remove_from_queue(head);
+
+    for (struct Node* current = *right; current != nullptr; current = current->next) {
+        CEthread_create(&current->t, nullptr, move_boat_right, current);
+    }
+
+    for (struct Node* current = *right; current != nullptr; current = current->next) {
+        CEthread_join((*right)->t);
+        remove_from_queue(right);
+    }
+
+    for (struct Node* current = *left; current != nullptr; current = current->next) {
+        CEthread_join((*left)->t);
+        remove_from_queue(left);
     }
 }
 

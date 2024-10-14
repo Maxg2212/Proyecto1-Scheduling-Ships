@@ -1,6 +1,6 @@
-Scheduler=FCFS
+Scheduler=SJF
 Flow=Equidad
-W=1
+W=3
 TimeSwap=3
 ChannelLength=750
 BoatSpeed=5
