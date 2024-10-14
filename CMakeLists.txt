@@ -27,6 +27,8 @@ add_executable(Proyecto1_Scheduling_Ships main.c
         channel_control/channel_algorithms.c
         GUI/guidef.c
         GUI/guidef.h
+        Hardware/arduino-serial-lib.c
+        Hardware/arduino-serial-lib.h
 )
 
 # Link SDL2 libraries

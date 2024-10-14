@@ -145,6 +145,7 @@ int CEthread_end(void* args)
     clone_args->target_function(clone_args->fnctn_args);
     // Free the memory
     free(clone_args);
+    clone_args = nullptr;
 
     // Get the pid
     int pid = getpid();
@@ -282,6 +283,7 @@ int CEmutex_destroy(CEthread_mutex_t* mutex){
     // Free the memory
     free(mutex->attributes);
     free(mutex);
+    mutex = nullptr;
 
     return 0;
 }

@@ -8,6 +8,9 @@
 #include "GUI/guidef.h"
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
+
+//#include "Hardware/arduino-serial-lib.h"
 
 // ----------------- Configuration parameters -----------------------------------
 char scheduler[20];
@@ -204,8 +207,10 @@ void* gui_thread(void* arg) {
         if (event_data[0] == SDL_KEYDOWN) {
             if (event_data[1] == SDLK_a) {
                 add_boat_by_key(1);
+
             } else if (event_data[1] == SDLK_d) {
                 add_boat_by_key(2);
+
             }
         }
 

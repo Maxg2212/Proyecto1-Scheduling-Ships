@@ -7,8 +7,10 @@
 #include <string.h>
 #include <time.h>
 #include <SDL2/SDL.h>
+#include "../Hardware/arduino-serial-lib.h"
 
 CEthread_mutex_t *pos_mutex;
+//CEthread_t *hardware;
 int mode = 0;
 int W = 0;
 double swap = 0;
@@ -22,31 +24,60 @@ double swap = 0;
 void move_boat(void* arg) {
     struct Node* this_boat = arg;
 
+    //CEmutex_trylock(pos_mutex);
+
+
     int direction = (this_boat->x < 900) ? 1 : -1;
+    //init_hardware();
     while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
-        if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
-            this_boat->y = 295;
-        } else {
-            this_boat->y = 230;
-        }
-        this_boat->x += direction * this_boat->speed;
+        // Antes de intentar obtener el mutex
+        //printf("Barco %d intentando obtener el mutex en posición %d\n", this_boat->pid, this_boat->x);
+        init_izquierda();
+        //CEmutex_trylock(pos_mutex); // Intentando obtener el mutex
+        //printf("Barco %d ha obtenido el mutex\n", this_boat->pid); // Confirmando que se obtuvo el mutex
+        //if (this_boat->prev != nullptr  && this_boat->prev->x - this_boat->x > 100)
+        //{
+            if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
+                this_boat->y = 295;
+            } else {
+                this_boat->y = 230;
+            }
+
+            this_boat->x += direction * this_boat->speed;
+        //}
+
+        //CEmutex_unlock(pos_mutex);
+        //printf("Barco %d ha liberado el mutex\n", this_boat->pid); // Confirmando que se liberó el mutex
         SDL_Delay(16);
     }
     while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
-        if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
-            this_boat->y = 295;
-        } else {
-            this_boat->y = 370;
-        }
-        this_boat->x += direction * this_boat->speed;
+        // Antes de intentar obtener el mutex
+        //printf("Barco %d intentando obtener el mutex en posición %d\n", this_boat->pid, this_boat->x);
+        init_derecha();
+        //CEmutex_trylock(pos_mutex); // Intentando obtener el mutex
+        //printf("Barco %d ha obtenido el mutex\n", this_boat->pid); // Confirmando que se obtuvo el mutex
+        //if (this_boat->prev != nullptr && this_boat->prev->x - this_boat->x > 100)
+        //{
+            if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
+                this_boat->y = 295;
+            } else {
+                this_boat->y = 370;
+            }
+            this_boat->x += direction * this_boat->speed;
+        //}
+        //CEmutex_unlock(pos_mutex);
+        //printf("Barco %d ha liberado el mutex\n", this_boat->pid); // Confirmando que se liberó el mutex
         SDL_Delay(16);
     }
+    //CEmutex_unlock(pos_mutex);
 }
 
 void move_patrol(void* arg) {
     struct Node* this_boat = arg;
     int direction = (this_boat->x < 900) ? 1 : -1;
     while (direction == 1 && this_boat->x < 900 + this_boat->channel / 2) {
+        init_izquierda();
+
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -56,6 +87,7 @@ void move_patrol(void* arg) {
         SDL_Delay(16);
     }
     while (direction == -1 && this_boat->x > 820 - this_boat->channel / 2) {
+        init_derecha();
         if (820 - this_boat->channel / 2 < this_boat->x && this_boat->x < 900 + this_boat->channel / 2) {
             this_boat->y = 295;
         } else {
@@ -342,6 +374,19 @@ void earliest_deadline_first(struct Node** head, int numOfPatrols) {
         remove_from_queue(head);
         numOfPatrols2--;
     }
+}
+void init_izquierda()
+{
+        const char* mes = "a";
+        int dev = serialport_init("/dev/ttyACM0", 9600);
+        serialport_write(dev, mes);
+}
+
+void init_derecha()
+{
+    const char* mes = "b";
+    int dev = serialport_init("/dev/ttyACM0", 9600);
+    serialport_write(dev, mes);
 }
 
 void init_mutex() {
